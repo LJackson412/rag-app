@@ -32,14 +32,15 @@ async def extract_text(
     gen_metadata_prompt = index_config.extract_data_prompt
     gen_metadata_model = index_config.extract_model
     
-    metadata = load_pdf_metadata(state.path)
+    base_metadata = load_pdf_metadata(state.path)
     texts = load_texts_from_pdf(state.path)
-    
-    chunks = [
-        chunk
-        for text in texts
-        for chunk in splitter.split_text(text)
-    ]
+
+    chunks: list[str] = []
+    chunk_page_numbers: list[int] = []
+    for page_number, text in enumerate(texts, start=1):
+        page_chunks = splitter.split_text(text)
+        chunks.extend(page_chunks)
+        chunk_page_numbers.extend([page_number] * len(page_chunks))
     
     llm_texts_metadata = await gen_llm_metadata(
         chunks,
@@ -49,17 +50,17 @@ async def extract_text(
     )
     
     extracted_data_objs = []
-    for llm_text_metadata in llm_texts_metadata:
+    for chunk_page_number, llm_text_metadata in zip(chunk_page_numbers, llm_texts_metadata):
         extracted_data = ExtractedData(
             text=llm_text_metadata,
             figure=None,
             table=None,
-            metadata=metadata
+            metadata={**base_metadata, "page_number": chunk_page_number}
         )
         extracted_data_objs.append(extracted_data)
 
     return {
-        "metadata": metadata,
+        "metadata": base_metadata,
         "texts": texts,
         "chunks" : chunks,
         "extracted_data" : extracted_data_objs
