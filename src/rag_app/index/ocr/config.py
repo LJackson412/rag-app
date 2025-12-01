@@ -5,7 +5,7 @@ from typing import Annotated, Literal, TypeVar
 from langchain_core.runnables import RunnableConfig, ensure_config
 from pydantic import BaseModel, Field
 
-from rag_app.prompts.prompts import EXTRACT_DATA_FROM_DOCS_PROMPT
+from rag_app.prompts.prompts import GEN_METADATA_PROMPT
 
 T = TypeVar("T", bound="IndexConfig")
 
@@ -35,7 +35,7 @@ class IndexConfig(BaseModel):
             },
         ),
     ]
-    extract_model: Annotated[
+    gen_metadata_model: Annotated[
         Literal["gpt-4o", "gpt-4o-mini"],
         Field(
             default="gpt-4o-mini",
@@ -45,8 +45,8 @@ class IndexConfig(BaseModel):
             },
         ),
     ]
-    extract_data_prompt: str = Field(
-        default=EXTRACT_DATA_FROM_DOCS_PROMPT,
+    gen_metadata_prompt: str = Field(
+        default=GEN_METADATA_PROMPT,
         description="The system prompt used for generating responses.",
         json_schema_extra={
             "langgraph_nodes": ["extract_node"],

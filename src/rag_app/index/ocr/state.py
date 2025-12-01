@@ -1,9 +1,9 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
-from rag_app.index.ocr.schema import ExtractedData
+from rag_app.index.ocr.schema import DocumentSegment
 
 
 class InputIndexState(BaseModel):
@@ -20,16 +20,6 @@ class InputIndexState(BaseModel):
 
 
 class OutputIndexState(BaseModel):
-    
-    metadata: Annotated[
-        dict[str, Any],
-        Field(
-            default_factory=dict,
-            description=(
-                ""
-            ),
-        ),
-    ]
     texts: Annotated[
         list[str],
         Field(
@@ -39,18 +29,8 @@ class OutputIndexState(BaseModel):
             ),
         ),
     ]
-    chunks: Annotated[
-        list[str],
-        Field(
-            default_factory=list,
-            description=(
-                "every page one text"
-            ),
-        ),
-    ]
- 
-    extracted_data: Annotated[
-        list[ExtractedData],
+    document_segments: Annotated[
+        list[DocumentSegment],
         Field(
             default_factory=list,
             description=(
@@ -59,7 +39,6 @@ class OutputIndexState(BaseModel):
             ),
         ),
     ]
-    
     index_docs: Annotated[
         list[Document],
         Field(

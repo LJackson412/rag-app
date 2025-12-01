@@ -9,7 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from rag_app.factory.factory import abuild_vstore, build_chat_model
 from rag_app.index.ocr.config import IndexConfig
 from rag_app.index.ocr.mapping import map_to_docs
-from rag_app.index.ocr.schema import ExtractedData, Text
+from rag_app.index.ocr.schema import DocumentSegment, Text
 from rag_app.index.ocr.state import (
     InputIndexState,
     OutputIndexState,
@@ -29,75 +29,85 @@ async def extract_text(
 ) -> dict[str, Any]:
 
     index_config = IndexConfig.from_runnable_config(config)
-    gen_metadata_prompt = index_config.extract_data_prompt
-    gen_metadata_model = index_config.extract_model
     
-    metadata = load_pdf_metadata(state.path)
+    gen_metadata_prompt = index_config.gen_metadata_prompt
+    gen_metadata_model = index_config.gen_metadata_model
+    embedding_model = index_config.embedding_model
+    doc_id = index_config.doc_id
+    collection_id = index_config.collection_id
+
+
+    base_metadata = load_pdf_metadata(state.path)
     texts = load_texts_from_pdf(state.path)
-    
-    chunks = [
-        chunk
-        for text in texts
-        for chunk in splitter.split_text(text)
-    ]
-    
+
+    chunks: list[str] = []
+    chunk_page_numbers: list[int] = []
+    for page_number, text in enumerate(texts, start=1):
+        page_chunks = splitter.split_text(text)
+        chunks.extend(page_chunks)
+        chunk_page_numbers.extend([page_number] * len(page_chunks))
+
     llm_texts_metadata = await gen_llm_metadata(
         chunks,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
-        Text
+        Text,
     )
-    
-    extracted_data_objs = []
-    for llm_text_metadata in llm_texts_metadata:
-        extracted_data = ExtractedData(
+
+    document_segments = []
+    for chunk_index, (chunk, chunk_page_number, llm_text_metadata) in enumerate(
+        zip(chunks, chunk_page_numbers, llm_texts_metadata, strict=True)
+    ):
+        chunk_id = make_chunk_id(
+            collection_id=collection_id,
+            doc_id=doc_id,
+            chunk_index=chunk_index,
+        )
+
+        document_segment = DocumentSegment(
+            extracted_content=chunk,
+            metadata={ 
+                **base_metadata,
+                "chunk_type": "Text",
+                "page_number": chunk_page_number,
+                "chunk_index": chunk_index,
+                "chunk_id": chunk_id,
+                "doc_id": doc_id,
+                "collection_id": collection_id,
+                "embedding_model": embedding_model,
+                "gen_metadata_model": gen_metadata_model,
+            },
             text=llm_text_metadata,
             figure=None,
             table=None,
-            metadata=metadata
+       
         )
-        extracted_data_objs.append(extracted_data)
+        document_segments.append(document_segment)
 
     return {
-        "metadata": metadata,
         "texts": texts,
-        "chunks" : chunks,
-        "extracted_data" : extracted_data_objs
+        "document_segments": document_segments,
     }
-
-
+    
 async def save(
     state: OverallIndexState, config: RunnableConfig
 ) -> dict[str, list[Document]]:
+    
     index_config = IndexConfig.from_runnable_config(config)
-    doc_id = index_config.doc_id
+    
     collection_id = index_config.collection_id
     embedding_model = index_config.embedding_model
-    extract_model = index_config.extract_model
 
     vstore = await abuild_vstore(embedding_model, collection_id)
 
-    docs = map_to_docs(state.extracted_data)
+    docs = map_to_docs(state.document_segments)
     index_docs = filter_complex_metadata(docs)
-
-    for i, doc in enumerate(index_docs, start=0):
-        chunk_id = make_chunk_id(
-            collection_id=collection_id, doc_id=doc_id, chunk_index=i
-        )
-        doc.metadata = {
-            **getattr(doc, "metadata", {}),
-            "doc_id": doc_id,
-            "collection_id": collection_id,
-            "chunk_index": i,
-            "chunk_id": chunk_id,
-            "embedding_model": embedding_model,
-            "extract_model": extract_model,
-        }
 
     if index_docs:
         await vstore.aadd_documents(index_docs)
 
     return {"index_docs": index_docs}
+
 
 
 builder = StateGraph(

@@ -83,7 +83,20 @@ class Table(BaseAttributes):
     ]
 
 
-class ExtractedData(BaseModel):
+class DocumentSegment(BaseModel):
+    extracted_content: Annotated[
+        str,
+        Field(
+            description="",
+        ),
+    ]
+    metadata: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description="Additional metadata such as source, page number or PDF information.",
+        ),
+    ]
     text: Annotated[
         Text | None,
         Field(
@@ -110,12 +123,5 @@ class ExtractedData(BaseModel):
             description=(
                 "List of detected tables and lists with a structured HTML representation."
             ),
-        ),
-    ]
-    metadata: Annotated[
-        dict[str, Any],
-        Field(
-            default_factory=dict,
-            description="Additional metadata such as source, page number or PDF information.",
         ),
     ]

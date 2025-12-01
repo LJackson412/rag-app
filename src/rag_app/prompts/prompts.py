@@ -15,7 +15,7 @@ Output requirements:\n
 """
 
 
-EXTRACT_DATA_FROM_DOCS_PROMPT = """
+GEN_METADATA_PROMPT = """
 You receive the plain text content of a single document section:\n\n
 Output requirements:\n
 - Follow the provided schema exactly.\n
