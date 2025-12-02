@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
 from rag_app.index.ocr.schema import DocumentSegment
+from rag_app.loader.loader import PDFImage, PDFText
 
 
 class InputIndexState(BaseModel):
@@ -21,11 +22,20 @@ class InputIndexState(BaseModel):
 
 class OutputIndexState(BaseModel):
     texts: Annotated[
-        list[str],
+        list[PDFText] | None,
         Field(
             default_factory=list,
             description=(
                 "every page one text"
+            ),
+        ),
+    ]
+    imgs:  Annotated[
+        list[PDFImage] | None,
+        Field(
+            default_factory=list,
+            description=(
+                "imgs"
             ),
         ),
     ]

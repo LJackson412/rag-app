@@ -67,8 +67,8 @@ def attach_metadata(
     return updated_docs
 
 
-def make_chunk_id(collection_id: str, doc_id: str, chunk_index: int) -> str:
-    return f"{collection_id}::{doc_id}::{chunk_index:06d}"
+def make_chunk_id(chunk_type:str, collection_id: str, doc_id: str, chunk_index: int) -> str:
+    return f"{chunk_type}::{collection_id}::{doc_id}::{chunk_index:06d}"
 
 
 def parse_chunk_id(chunk_id: str) -> dict[str, str | int]:

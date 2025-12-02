@@ -56,7 +56,7 @@ class Text(BaseAttributes):
     ]
 
 
-class Figure(BaseAttributes):
+class Image(BaseAttributes):
     category: Annotated[
         str,
         Field(
@@ -109,8 +109,8 @@ class DocumentSegment(BaseModel):
             ),
         ),
     ]
-    figure: Annotated[
-        Figure | None,
+    image: Annotated[
+        Image | None,
         Field(
             default=None,
             description=("List of detected figures and graphical elements"),

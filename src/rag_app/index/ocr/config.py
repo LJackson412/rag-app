@@ -5,7 +5,7 @@ from typing import Annotated, Literal, TypeVar
 from langchain_core.runnables import RunnableConfig, ensure_config
 from pydantic import BaseModel, Field
 
-from rag_app.prompts.prompts import GEN_METADATA_PROMPT
+from rag_app.prompts.prompts import GEN_IMG_METADATA_PROMPT, GEN_TEXT_METADATA_PROMPT
 
 T = TypeVar("T", bound="IndexConfig")
 
@@ -35,6 +35,16 @@ class IndexConfig(BaseModel):
             },
         ),
     ]
+    mode: Annotated[
+        Literal["text", "images", "tables", "all"],
+            Field(
+            default="all",
+            description=(
+                ""
+            ),
+        )
+    ]
+    
     gen_metadata_model: Annotated[
         Literal["gpt-4o", "gpt-4o-mini"],
         Field(
@@ -45,11 +55,19 @@ class IndexConfig(BaseModel):
             },
         ),
     ]
-    gen_metadata_prompt: str = Field(
-        default=GEN_METADATA_PROMPT,
+    gen_text_metadata_prompt: str = Field(
+        default=GEN_TEXT_METADATA_PROMPT,
         description="The system prompt used for generating responses.",
         json_schema_extra={
-            "langgraph_nodes": ["extract_node"],
+            "langgraph_nodes": ["extract_text"],
+            "langgraph_type": "prompt",
+        },
+    )
+    gen_img_metadata_prompt: str = Field(
+        default=GEN_IMG_METADATA_PROMPT,
+        description="The system prompt used for generating responses.",
+        json_schema_extra={
+            "langgraph_nodes": ["extract_imgs"],
             "langgraph_type": "prompt",
         },
     )
