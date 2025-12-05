@@ -1,5 +1,5 @@
 from operator import add
-from typing import Annotated, Any
+from typing import Annotated
 
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from rag_app.index.llm.schema import (
     CodeOrFormulaSegment,
     ImageSegment,
+    LLMException,
     OtherSegment,
     TableOrListSegment,
     TextSegment,
@@ -88,7 +89,7 @@ class OutputIndexState(BaseModel):
         ),
     ]
     llm_errors: Annotated[
-        list[Any],
+        list[LLMException],
         add,
         Field(
             default_factory=list,

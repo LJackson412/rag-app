@@ -7,6 +7,43 @@ from pydantic import BaseModel, Field
 from rag_app.index.schema import BaseLLMSegmentAttributes
 
 
+class LLMException(BaseModel):
+    page_number: Annotated[
+        int | None,
+        Field(
+            default=None,
+            description="PDF page number related to the exception, if known.",
+        ),
+    ]
+    chunk_type: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description="Chunk type being processed when the exception occurred.",
+        ),
+    ]
+    chunk_index: Annotated[
+        int | None,
+        Field(
+            default=None,
+            description="Chunk index being processed when the exception occurred.",
+        ),
+    ]
+    message: Annotated[
+        str,
+        Field(
+            description="Original exception message for debugging structured extraction failures.",
+        ),
+    ]
+    traceback: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description="Formatted traceback string when available.",
+        ),
+    ]
+
+
 class LLMTextSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,

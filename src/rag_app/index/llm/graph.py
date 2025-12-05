@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Any
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
@@ -12,6 +13,7 @@ from rag_app.index.llm.mapping import map_to_docs
 from rag_app.index.llm.schema import (
     CodeOrFormulaSegment,
     ImageSegment,
+    LLMException,
     LLMSegments,
     OtherSegment,
     TableOrListSegment,
@@ -85,11 +87,17 @@ async def llm_extract(
     for llm_response, pdf_page_img in zip(
         llm_responses, pdf_page_imgs, strict=True
     ):
-         
-        for exception in llm_response if isinstance(llm_response, Exception):
-            
-            # map to llm exception
-            pass
+        if isinstance(llm_response, Exception):
+            llm_exceptions.append(
+                LLMException(
+                    page_number=pdf_page_img.page_number,
+                    chunk_type="LLMSegments",
+                    chunk_index=chunk_index,
+                    message=str(llm_response),
+                    traceback="".join(traceback.format_exception(llm_response)),
+                )
+            )
+            continue
         
         
         for text_segment in llm_response.texts:
@@ -205,7 +213,7 @@ async def llm_extract(
         "table_segments": table_segments,
         "code_or_formula_segments": code_or_formula_segments,
         "other_segments": other_segments,
-        "llm_errors": state.llm_errors + extraction_errors,
+        "llm_errors": state.llm_errors + llm_exceptions,
     }
 
 
