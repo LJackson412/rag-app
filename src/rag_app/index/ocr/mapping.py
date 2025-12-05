@@ -3,6 +3,7 @@ from typing import Any
 
 from langchain_core.documents import Document
 
+from rag_app.index.llm.schema import LLMSegments
 from rag_app.index.ocr.schema import (
     BaseSegmentAttributes,
     ImageSegment,

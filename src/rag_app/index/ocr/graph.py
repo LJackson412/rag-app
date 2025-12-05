@@ -23,7 +23,10 @@ from rag_app.index.ocr.state import (
     OutputIndexState,
     OverallIndexState,
 )
-from rag_app.llm_enrichment.llm_enrichment import gen_llm_metadata
+from rag_app.llm_enrichment.llm_enrichment import (
+    gen_llm_structured_data_from_imgs,
+    gen_llm_structured_data_from_texts,
+)
 from rag_app.loader.loader import (
     load_imgs_from_pdf,
     load_pdf_metadata,
@@ -87,7 +90,7 @@ async def extract_text(
             chunks.append(chunk)
             pages.append(pdf_text.page_number)
 
-    llm_text_segments = await gen_llm_metadata(
+    llm_text_segments = await gen_llm_structured_data_from_texts(
         chunks,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -133,15 +136,14 @@ async def extract_imgs(
     doc_id = index_config.doc_id
     collection_id = index_config.collection_id
 
-    pdf_imgs = load_imgs_from_pdf(state.path)  # List[PDFImage]
+    pdf_imgs = load_imgs_from_pdf(state.path)
 
     img_urls = [img.image_url for img in pdf_imgs]
-    llm_img_segments = await gen_llm_metadata(
+    llm_img_segments = await gen_llm_structured_data_from_imgs(
         img_urls,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
-        LLMImageSegment,
-        imgs=True,
+        LLMImageSegment
     )
 
     document_segments = []
@@ -195,7 +197,7 @@ async def extract_tables(
         else:
             html_or_text_tables.append("table extraction failed")
 
-    llm_table_segments = await gen_llm_metadata(
+    llm_table_segments = await gen_llm_structured_data_from_texts(
         html_or_text_tables,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,

@@ -20,8 +20,7 @@ def _build_llm_text_inputs(
 
 def _build_llm_img_inputs(
     imgs_urls: Sequence[str],
-    prompt: str,
-    ext: str = "png",
+    prompt: str
 ) -> list[LanguageModelInput]:
     inputs: list[LanguageModelInput] = []
     for img_url in imgs_urls:
@@ -45,25 +44,38 @@ def _build_llm_img_inputs(
 TModel = TypeVar("TModel", bound=BaseModel)
 
 
-async def gen_llm_metadata(
-    texts_or_imgs: Sequence[str],
+async def gen_llm_structured_data_from_imgs(
+    imgs_urls: Sequence[str],
     llm: BaseChatModel,
     gen_prompt: str,
-    gen_data: Type[TModel],
-    imgs: bool = False,
-    ext: str = "png",
+    gen_data: Type[TModel]
 ) -> list[TModel]:
     """Extrahiere strukturierte Daten aus Text- oder Bild-Chunks."""
 
-    if not texts_or_imgs:
+    if not imgs_urls:
         return []
 
     structured_llm = llm.with_structured_output(gen_data)
+    inputs = _build_llm_img_inputs(imgs_urls, gen_prompt)
 
-    if imgs:
-        inputs = _build_llm_img_inputs(texts_or_imgs, gen_prompt, ext)
-    else:
-        inputs = _build_llm_text_inputs(texts_or_imgs, gen_prompt)
+    res = cast(list[TModel], await structured_llm.abatch(inputs))
+    return res
+
+
+
+async def gen_llm_structured_data_from_texts(
+    texts: Sequence[str],
+    llm: BaseChatModel,
+    gen_prompt: str,
+    gen_data: Type[TModel]
+) -> list[TModel]:
+    """Extrahiere strukturierte Daten aus Text- oder Bild-Chunks."""
+    
+    if not texts:
+        return []
+
+    structured_llm = llm.with_structured_output(gen_data)
+    inputs = _build_llm_text_inputs(texts, gen_prompt)
 
     res = cast(list[TModel], await structured_llm.abatch(inputs))
     return res

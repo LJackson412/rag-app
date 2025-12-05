@@ -1,47 +1,13 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
-
-class BaseAttributes(BaseModel):
-    language: Annotated[
-        Literal["de", "eng", "n/a"],
-        Field(
-            description="Detected document segment language; all outputs must use this language.",
-        ),
-    ]
-    title: Annotated[
-        str,
-        Field(
-            description=(
-                "Original title of this document section, if present. "
-                "If the section has no explicit title, create a short, precise, and informative title "
-                "that clearly describes the content of this section."
-            ),
-        ),
-    ]
-    retrieval_summary: Annotated[
-        str,
-        Field(
-            description=(
-                "Write a short, retrieval-oriented summary of this document section in the same language as the original text."
-                "Capture the main topic, important entities and concepts, their relationships, and any crucial numbers, dates, or identifiers. "
-                "Use key domain terms and phrases that users might search for. 1-3 sentences, no bullet points."
-            ),
-        ),
-    ]
-    labels: Annotated[
-        list[str],
-        Field(
-            default_factory=list,
-            description=("List of short tags to enrich this section with metadata, "),
-        ),
-    ]
+from rag_app.index.schema import BaseLLMSegmentAttributes
 
 
-class Text(BaseAttributes):
+class LLMTextSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,
         Field(
@@ -64,7 +30,7 @@ class Text(BaseAttributes):
     ]
 
 
-class Figure(BaseAttributes):
+class LLMImageSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,
         Field(
@@ -94,7 +60,7 @@ class Figure(BaseAttributes):
     ]
 
 
-class TableOrList(BaseAttributes):
+class LLMTableOrListSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,
         Field(
@@ -123,7 +89,7 @@ class TableOrList(BaseAttributes):
     ]
 
 
-class CodeOrFormula(BaseAttributes):
+class LLMCodeOrFormulaSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,
         Field(
@@ -152,7 +118,7 @@ class CodeOrFormula(BaseAttributes):
     ]
 
 
-class Other(BaseAttributes):
+class LLMOtherSegment(BaseLLMSegmentAttributes):
     extracted_content: Annotated[
         str,
         Field(
@@ -171,10 +137,11 @@ class Other(BaseAttributes):
         ),
     ]
 
-
-class LLMExtractedData(BaseModel):
+# Used as strcutured Output Prompt for the LLM to generate Segements,
+# from one Image, can be one pdf page 
+class LLMSegments(BaseModel):
     texts: Annotated[
-        list[Text],
+        list[LLMTextSegment],
         Field(
             default_factory=list,
             description=(
@@ -186,14 +153,14 @@ class LLMExtractedData(BaseModel):
         ),
     ]
     figures: Annotated[
-        list[Figure],
+        list[LLMImageSegment],
         Field(
             default_factory=list,
             description=("List of detected figures and graphical elements"),
         ),
     ]
     tables: Annotated[
-        list[TableOrList],
+        list[LLMTableOrListSegment],
         Field(
             default_factory=list,
             description=(
@@ -202,7 +169,7 @@ class LLMExtractedData(BaseModel):
         ),
     ]
     code_or_formulas: Annotated[
-        list[CodeOrFormula],
+        list[LLMCodeOrFormulaSegment],
         Field(
             default_factory=list,
             description=(
@@ -212,7 +179,7 @@ class LLMExtractedData(BaseModel):
         ),
     ]
     others: Annotated[
-        list[Other],
+        list[LLMOtherSegment],
         Field(
             default_factory=list,
             description=(
@@ -223,7 +190,7 @@ class LLMExtractedData(BaseModel):
     ]
 
 
-class ExtractedData(LLMExtractedData):
+class Segments(LLMSegments):
     metadata: Annotated[
         dict[str, Any],
         Field(
@@ -231,3 +198,25 @@ class ExtractedData(LLMExtractedData):
             description="Additional metadata such as source, page number or PDF information.",
         ),
     ]
+
+
+# -------------------------------------------------------------------------------
+
+class BaseSegmentAttributes(BaseModel):
+    metadata: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description="",
+        ),
+    ]
+
+
+class TextSegment(BaseSegmentAttributes):
+    llm_text_segment: Annotated[
+        LLMTextSegment,
+        Field(
+            description=(""),
+        ),
+    ]
+

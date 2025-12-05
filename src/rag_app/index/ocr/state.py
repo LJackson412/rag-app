@@ -51,7 +51,6 @@ class OutputIndexState(BaseModel):
             ),
         ),
     ]
-
     index_docs: Annotated[
         list[Document],
         Field(

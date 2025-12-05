@@ -1,8 +1,10 @@
 import base64
 from dataclasses import dataclass
+from io import BytesIO
 from typing import Any, Dict, List
 
 import fitz  # type: ignore
+from pdf2image import convert_from_path
 from unstructured.partition.pdf import partition_pdf
 
 
@@ -91,6 +93,35 @@ def load_imgs_from_pdf(pdf_path: str) -> List[PDFImage]:
     return images
 
 
+
+def load_page_imgs_from_pdf(pdf_path: str) -> list[PDFImage]:
+    """
+    Load every PDF page as an image (Base64-kodiert) und liefere eine Liste von PDFImage.
+    Jede Seite wird als PNG in Graustufen gerendert.
+    """
+    imgs = convert_from_path(pdf_path, dpi=120)
+
+    imgs_gray = [img.convert("L") for img in imgs]
+
+    pdf_imgs: list[PDFImage] = []
+
+    for page_number, img in enumerate(imgs_gray, start=1):
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("ascii")
+
+        pdf_imgs.append(
+            PDFImage(
+                img_base64=img_base64,
+                ext="png",
+                page_number=page_number,
+            )
+        )
+
+    return pdf_imgs
+
 def load_tables_from_pdf(pdf_path: str) -> list[PDFTable]:
     "detectron2_onnx: used for  document layout"
     "tesseract: for ocr"
@@ -115,6 +146,3 @@ def load_tables_from_pdf(pdf_path: str) -> list[PDFTable]:
     return pdf_tables
 
 
-def load_page_as_image_from_pdf(pdf_path: str) -> list[str]:
-    "load every pdf page as image as base64"
-    return []

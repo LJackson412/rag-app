@@ -1,9 +1,9 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
-from rag_app.index.llm.schema import ExtractedData
+from rag_app.index.llm.schema import LLMSegments, TextSegment
 
 
 class InputIndexState(BaseModel):
@@ -20,8 +20,8 @@ class InputIndexState(BaseModel):
 
 
 class OutputIndexState(BaseModel):
-    extracted_data: Annotated[
-        list[ExtractedData],
+    text_segments: Annotated[
+        list[TextSegment],
         Field(
             default_factory=list,
             description=(
@@ -44,3 +44,11 @@ class OutputIndexState(BaseModel):
 
 class OverallIndexState(InputIndexState, OutputIndexState):
     """Combined input/output schema used as the shared state across the graph."""
+
+    document_metadata: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description=("every page one text"),
+        ),
+    ]
