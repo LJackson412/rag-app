@@ -90,7 +90,9 @@ async def extract_text(
             chunks.append(chunk)
             pages.append(pdf_text.page_number)
 
-    llm_text_segments = await gen_llm_structured_data_from_texts(
+    llm_text_segments: list[LLMTextSegment]
+    text_errors: list[Exception]
+    llm_text_segments, text_errors = await gen_llm_structured_data_from_texts(
         chunks,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -99,7 +101,12 @@ async def extract_text(
 
     document_segments = []
     for chunk_index, (chunk, chunk_page, llm_text_segment) in enumerate(
-        zip(chunks, pages, llm_text_segments, strict=True)
+        zip(
+            chunks[: len(llm_text_segments)],
+            pages[: len(llm_text_segments)],
+            llm_text_segments,
+            strict=True,
+        )
     ):
         chunk_id = make_chunk_id(
             chunk_type="Text",
@@ -121,7 +128,11 @@ async def extract_text(
         )
         document_segments.append(text_segment)
 
-    return {"text_segments": document_segments}
+    return {
+        "text_segments": document_segments,
+        # Surface LLM parsing errors so clients can decide whether to retry the failed chunks.
+        "llm_errors": state.llm_errors + text_errors,
+    }
 
 
 async def extract_imgs(
@@ -139,16 +150,23 @@ async def extract_imgs(
     pdf_imgs = load_imgs_from_pdf(state.path)
 
     img_urls = [img.image_url for img in pdf_imgs]
-    llm_img_segments = await gen_llm_structured_data_from_imgs(
+    llm_img_segments: list[LLMImageSegment]
+    image_errors: list[Exception]
+    llm_img_segments, image_errors = await gen_llm_structured_data_from_imgs(
         img_urls,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
-        LLMImageSegment
+        LLMImageSegment,
     )
 
     document_segments = []
     for chunk_index, (img, img_url, llm_img_segment) in enumerate(
-        zip(pdf_imgs, img_urls, llm_img_segments, strict=True)
+        zip(
+            pdf_imgs[: len(llm_img_segments)],
+            img_urls[: len(llm_img_segments)],
+            llm_img_segments,
+            strict=True,
+        )
     ):
         chunk_id = make_chunk_id(
             chunk_type="Image",
@@ -171,7 +189,11 @@ async def extract_imgs(
         )
         document_segments.append(img_segment)
 
-    return {"image_segments": document_segments}
+    return {
+        "image_segments": document_segments,
+        # Surface LLM parsing errors so clients can decide whether to retry the failed chunks.
+        "llm_errors": state.llm_errors + image_errors,
+    }
 
 
 async def extract_tables(
@@ -197,7 +219,9 @@ async def extract_tables(
         else:
             html_or_text_tables.append("table extraction failed")
 
-    llm_table_segments = await gen_llm_structured_data_from_texts(
+    llm_table_segments: list[LLMTableSegment]
+    table_errors: list[Exception]
+    llm_table_segments, table_errors = await gen_llm_structured_data_from_texts(
         html_or_text_tables,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -206,7 +230,7 @@ async def extract_tables(
 
     document_segments = []
     for chunk_index, (pdf_table, llm_table_segment) in enumerate(
-        zip(pdf_tables, llm_table_segments, strict=True)
+        zip(pdf_tables[: len(llm_table_segments)], llm_table_segments, strict=True)
     ):
         chunk_id = make_chunk_id(
             chunk_type="Table",
@@ -229,7 +253,11 @@ async def extract_tables(
         )
         document_segments.append(table_segment)
 
-    return {"table_segments": document_segments}
+    return {
+        "table_segments": document_segments,
+        # Surface LLM parsing errors so clients can decide whether to retry the failed chunks.
+        "llm_errors": state.llm_errors + table_errors,
+    }
 
 
 async def save(

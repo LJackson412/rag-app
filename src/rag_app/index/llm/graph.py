@@ -66,11 +66,13 @@ async def llm_extract(
     
     img_urls = [img.image_url for img in pdf_page_imgs]
     
-    llm_segments = await gen_llm_structured_data_from_imgs(
+    llm_segments: list[LLMSegments]
+    extraction_errors: list[Exception]
+    llm_segments, extraction_errors = await gen_llm_structured_data_from_imgs(
         img_urls,
         build_chat_model(extract_model),
         extract_prompt,
-        LLMSegments
+        LLMSegments,
     )
     
     text_segments: list[TextSegment] = []
@@ -80,7 +82,9 @@ async def llm_extract(
     other_segments: list[OtherSegment] = []
 
     chunk_index = 0
-    for llm_segment, pdf_page_img in zip(llm_segments, pdf_page_imgs, strict=True):
+    for llm_segment, pdf_page_img in zip(
+        llm_segments, pdf_page_imgs[: len(llm_segments)], strict=True
+    ):
         for text_segment in llm_segment.texts:
             chunk_id = make_chunk_id(
                 chunk_type="Text",
@@ -192,6 +196,8 @@ async def llm_extract(
         "table_segments": table_segments,
         "code_or_formula_segments": code_or_formula_segments,
         "other_segments": other_segments,
+        # Surface LLM parsing errors so clients can decide whether to retry the failed chunks.
+        "llm_errors": state.llm_errors + extraction_errors,
     }
 
 

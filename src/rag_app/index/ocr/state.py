@@ -73,3 +73,14 @@ class OverallIndexState(InputIndexState, OutputIndexState):
             description=("every page one text"),
         ),
     ]
+    llm_errors: Annotated[
+        list[Exception],
+        add,
+        Field(
+            default_factory=list,
+            description=(
+                "Errors raised by the LLM structured extraction nodes. Clients can inspect these "
+                "to selectively retry failed chunks without rerunning the entire indexing job."
+            ),
+        ),
+    ]
