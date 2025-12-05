@@ -18,6 +18,7 @@ from rag_app.index.ocr.schema import (
     TableSegment,
     TextSegment,
 )
+from rag_app.index.schema import LLMException
 from rag_app.index.ocr.state import (
     InputIndexState,
     OutputIndexState,
@@ -149,23 +150,19 @@ async def extract_imgs(
     pdf_imgs = load_imgs_from_pdf(state.path)
 
     img_urls = [img.image_url for img in pdf_imgs]
-    llm_img_segments: list[LLMImageSegment]
-    image_errors: list[Exception]
-    llm_img_segments, image_errors = await gen_llm_structured_data_from_imgs(
-        img_urls,
-        build_chat_model(gen_metadata_model),
-        gen_metadata_prompt,
-        LLMImageSegment,
+    llm_img_responses: list[LLMImageSegment | Exception] = (
+        await gen_llm_structured_data_from_imgs(
+            img_urls,
+            build_chat_model(gen_metadata_model),
+            gen_metadata_prompt,
+            LLMImageSegment,
+        )
     )
 
     document_segments = []
+    llm_image_errors: list[LLMException] = []
     for chunk_index, (img, img_url, llm_img_segment) in enumerate(
-        zip(
-            pdf_imgs[: len(llm_img_segments)],
-            img_urls[: len(llm_img_segments)],
-            llm_img_segments,
-            strict=True,
-        )
+        zip(pdf_imgs, img_urls, llm_img_responses, strict=True)
     ):
         chunk_id = make_chunk_id(
             chunk_type="Image",
@@ -173,6 +170,22 @@ async def extract_imgs(
             doc_id=doc_id,
             chunk_index=chunk_index,
         )
+
+        if isinstance(llm_img_segment, Exception):
+            llm_image_errors.append(
+                LLMException(
+                    error=str(llm_img_segment),
+                    metadata={
+                        **state.document_metadata,
+                        "chunk_type": "Image",
+                        "page_number": img.page_number,
+                        "ext": img.ext,
+                        "chunk_index": chunk_index,
+                        "chunk_id": chunk_id,
+                    },
+                )
+            )
+            continue
 
         img_segment = ImageSegment(
             extracted_content=img_url,
@@ -190,7 +203,7 @@ async def extract_imgs(
 
     return {
         "image_segments": document_segments,
-        "llm_errors": state.llm_errors + image_errors,
+        "llm_errors": state.llm_errors + llm_image_errors,
     }
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -39,5 +39,16 @@ class BaseLLMSegmentAttributes(BaseModel):
             description=(
                 "List of 2-3 short tags to enrich this section with metadata, "
             ),
+        ),
+    ]
+
+
+class LLMException(BaseModel):
+    error: Annotated[str, Field(description="LLM extraction error message")]
+    metadata: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description="Contextual metadata for the failed chunk extraction.",
         ),
     ]
