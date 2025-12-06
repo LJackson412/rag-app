@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
 from rag_app.index.ocr.schema import ImageSegment, TableSegment, TextSegment
+from rag_app.index.schema import LLMException
 
 
 class InputIndexState(BaseModel):
@@ -61,8 +62,8 @@ class OutputIndexState(BaseModel):
             ),
         ),
     ]
-    llm_errors: Annotated[
-        list[Any],
+    llm_exceptions: Annotated[
+        list[LLMException],
         add,
         Field(
             default_factory=list,

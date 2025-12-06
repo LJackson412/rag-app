@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Any
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
@@ -23,6 +24,7 @@ from rag_app.index.ocr.state import (
     OutputIndexState,
     OverallIndexState,
 )
+from rag_app.index.schema import LLMException
 from rag_app.llm_enrichment.llm_enrichment import (
     gen_llm_structured_data_from_imgs,
     gen_llm_structured_data_from_texts,
@@ -90,9 +92,7 @@ async def extract_text(
             chunks.append(chunk)
             pages.append(pdf_text.page_number)
 
-    llm_text_segments: list[LLMTextSegment]
-    text_errors: list[Exception]
-    llm_text_segments, text_errors = await gen_llm_structured_data_from_texts(
+    llm_text_responses = await gen_llm_structured_data_from_texts(
         chunks,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -100,14 +100,24 @@ async def extract_text(
     )
 
     document_segments = []
+    text_exceptions: list[LLMException] = []
     for chunk_index, (chunk, chunk_page, llm_text_segment) in enumerate(
-        zip(
-            chunks[: len(llm_text_segments)],
-            pages[: len(llm_text_segments)],
-            llm_text_segments,
-            strict=True,
-        )
+        zip(chunks, pages, llm_text_responses, strict=True)
     ):
+        if isinstance(llm_text_segment, Exception):
+            text_exceptions.append(
+                LLMException(
+                    page_number=chunk_page,
+                    chunk_type="Text",
+                    chunk_index=chunk_index,
+                    message=str(llm_text_segment),
+                    traceback="".join(
+                        traceback.format_exception(llm_text_segment)
+                    ),
+                )
+            )
+            continue
+
         chunk_id = make_chunk_id(
             chunk_type="Text",
             collection_id=collection_id,
@@ -130,7 +140,7 @@ async def extract_text(
 
     return {
         "text_segments": document_segments,
-        "llm_errors": state.llm_errors + text_errors
+        "llm_exceptions": state.llm_exceptions + text_exceptions,
     }
 
 
@@ -149,9 +159,7 @@ async def extract_imgs(
     pdf_imgs = load_imgs_from_pdf(state.path)
 
     img_urls = [img.image_url for img in pdf_imgs]
-    llm_img_segments: list[LLMImageSegment]
-    image_errors: list[Exception]
-    llm_img_segments, image_errors = await gen_llm_structured_data_from_imgs(
+    llm_img_responses = await gen_llm_structured_data_from_imgs(
         img_urls,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -159,14 +167,24 @@ async def extract_imgs(
     )
 
     document_segments = []
+    image_exceptions: list[LLMException] = []
     for chunk_index, (img, img_url, llm_img_segment) in enumerate(
-        zip(
-            pdf_imgs[: len(llm_img_segments)],
-            img_urls[: len(llm_img_segments)],
-            llm_img_segments,
-            strict=True,
-        )
+        zip(pdf_imgs, img_urls, llm_img_responses, strict=True)
     ):
+        if isinstance(llm_img_segment, Exception):
+            image_exceptions.append(
+                LLMException(
+                    page_number=img.page_number,
+                    chunk_type="Image",
+                    chunk_index=chunk_index,
+                    message=str(llm_img_segment),
+                    traceback="".join(
+                        traceback.format_exception(llm_img_segment)
+                    ),
+                )
+            )
+            continue
+
         chunk_id = make_chunk_id(
             chunk_type="Image",
             collection_id=collection_id,
@@ -190,7 +208,7 @@ async def extract_imgs(
 
     return {
         "image_segments": document_segments,
-        "llm_errors": state.llm_errors + image_errors,
+        "llm_exceptions": state.llm_exceptions + image_exceptions,
     }
 
 
@@ -217,9 +235,7 @@ async def extract_tables(
         else:
             html_or_text_tables.append("table extraction failed")
 
-    llm_table_segments: list[LLMTableSegment]
-    table_errors: list[Exception]
-    llm_table_segments, table_errors = await gen_llm_structured_data_from_texts(
+    llm_table_responses = await gen_llm_structured_data_from_texts(
         html_or_text_tables,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
@@ -227,9 +243,24 @@ async def extract_tables(
     )
 
     document_segments = []
+    table_exceptions: list[LLMException] = []
     for chunk_index, (pdf_table, llm_table_segment) in enumerate(
-        zip(pdf_tables[: len(llm_table_segments)], llm_table_segments, strict=True)
+        zip(pdf_tables, llm_table_responses, strict=True)
     ):
+        if isinstance(llm_table_segment, Exception):
+            table_exceptions.append(
+                LLMException(
+                    page_number=pdf_table.page_number,
+                    chunk_type="Table",
+                    chunk_index=chunk_index,
+                    message=str(llm_table_segment),
+                    traceback="".join(
+                        traceback.format_exception(llm_table_segment)
+                    ),
+                )
+            )
+            continue
+
         chunk_id = make_chunk_id(
             chunk_type="Table",
             collection_id=collection_id,
@@ -253,7 +284,7 @@ async def extract_tables(
 
     return {
         "table_segments": document_segments,
-        "llm_errors": state.llm_errors + table_errors,
+        "llm_exceptions": state.llm_exceptions + table_exceptions,
     }
 
 
