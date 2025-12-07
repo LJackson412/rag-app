@@ -71,7 +71,7 @@ switch (Mode)
 
       repeat
 
-        :Map LLM-Response to text segments;
+        :Map LLM-Response to text segments or exception;
             note left
                 text_segments: list[TextSegment] 
                 llm_exceptions: list[LLMException] 

@@ -192,7 +192,10 @@ class TextSegment(BaseSegmentAttributes):
     llm_text_segment: Annotated[
         LLMTextSegment,
         Field(
-            description=(""),
+            description=(
+                "Structured LLM output for this text section, including extracted "
+                "content and the assigned text category."
+            ),
         ),
     ]
 
@@ -201,7 +204,10 @@ class ImageSegment(BaseSegmentAttributes):
     llm_image_segment: Annotated[
         LLMImageSegment,
         Field(
-            description=(""),
+            description=(
+                "Structured LLM output for this figure, combining the description "
+                "and the visual category."
+            ),
         ),
     ]
 
@@ -211,7 +217,8 @@ class TableOrListSegment(BaseSegmentAttributes):
         LLMTableOrListSegment,
         Field(
             description=(
-                ""
+                "Structured LLM output for tables or lists, containing the HTML "
+                "representation and structural category."
             ),
         ),
     ]
@@ -222,7 +229,8 @@ class CodeOrFormulaSegment(BaseSegmentAttributes):
         LLMCodeOrFormulaSegment,
         Field(
             description=(
-                ""
+                "Structured LLM output for code or formula blocks, including the "
+                "verbatim content and block category."
             ),
         ),
     ]
@@ -233,7 +241,8 @@ class OtherSegment(BaseSegmentAttributes):
         LLMOtherSegment,
         Field(
             description=(
-                ""
+                "Structured LLM output for content that does not fit other "
+                "segments, capturing the original text and a custom category."
             ),
         ),
     ]

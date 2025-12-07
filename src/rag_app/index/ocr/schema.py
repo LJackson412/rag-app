@@ -52,7 +52,10 @@ class TextSegment(BaseSegmentAttributes):
     llm_text_segment: Annotated[
         LLMTextSegment,
         Field(
-            description=(""),
+            description=(
+                "LLM-provided categorization and metadata for this text section "
+                "based on the extracted OCR content."
+            ),
         ),
     ]
 
