@@ -57,17 +57,13 @@ class OutputIndexState(BaseModel):
             ),
         ),
     ]
-    llm_exceptions: Annotated[
-        list[LLMException],
-        add,
-        Field(
-            default_factory=list,
-            description=(
-                "Errors raised by the LLM structured extraction nodes. Clients can inspect these "
-                "to selectively retry failed chunks without rerunning the entire indexing job."
-            ),
+    llm_exceptions: Annotated[list[LLMException], add] = Field(
+        default_factory=list,
+        description=(
+            "Errors raised by the LLM structured extraction nodes. Clients can inspect these "
+            "to selectively retry failed chunks without rerunning the entire indexing job."
         ),
-    ]
+    )
 
 
 class OverallIndexState(InputIndexState, OutputIndexState):
