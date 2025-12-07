@@ -152,7 +152,7 @@ async def llm_extract(
             )
             table_segments.append(
                 TableOrListSegment(
-                    extracted_content=image_segment.extracted_content,
+                    extracted_content=table_segment.extracted_content,
                     metadata={
                         **state.document_metadata,
                         "chunk_type": "Table",

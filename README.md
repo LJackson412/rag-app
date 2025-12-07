@@ -1,10 +1,26 @@
 # LLM Extractor & RAG App
 
-This application combines a multimodal extractor (PDF → structured chunks) with a two-stage Retrieval-Augmented Generation (RAG) pipeline. LangGraph orchestrates the individual nodes, Chroma serves as the in-memory vector store, and OpenAI models provide both embeddings and responses.
 
-- **Tech Stack:** LangGraph (Python), Chroma vector store (in-memory), OpenAI models (Embeddings, GPT-4o/4.1 family) – interchangeable with your own providers.
-- **Indexing Flow:** PDF → PNG projection → LLM extraction with JSON schema → store including metadata (Doc ID, language, page range) in the vector store.
-- **Retrieval Flow:** User query → multi-query expansion → Stage 1 (vector store recall) → Stage 2 (LLM re-ranking/filtering) → answer synthesis including references and the input language.
+**Tech Stack:** 
+- LangGraph/LangChain
+- Chroma vector store (in-memory) – interchangeable with your own providers.
+- OpenAI models – interchangeable with your own providers.
+
+## Index-Process
+
+### OCR-Indexer: OCR-Extraction with llm metadata enrichment
+
+![OCR-Indexer](/docs/index_ocr_graph.png)
+
+### LLM-Indexer: LLM-Extraction and Splitting with metadata enrichment
+
+![LLM-Indexer](/docs/index_ocr_graph.png)
+
+## Retrieval-Process: 2-Stage with LLM-Compression
+
+![Retrieval-Graph](/docs/index_ocr_graph.png)
+
+
 
 ## Setup & Launch
 
@@ -42,16 +58,11 @@ Example with an already indexed collection in `path: ./data/DB_ZB25.pdf`:
 **Index Graph**
 Example Run 1:
 
-* `collection_id: DB_ZB_Pages`
-* `path: ./data/DB_ZB25_S73.pdf`
-* `doc_id: DB_ZB25_S73`
+* `collection_id: Test_M`
+* `doc_id: Test_M_1`
+* `path: ./data/Test_M1/Test_M_1.pdf`
 
-Example Run 2:
 
-* `collection_id: DB_ZB_Pages`
-* `path: ./data/DB_ZB25_S73.pdf`
-* `path: ./data/Test_Maßnahme_1.pdf`
-* `doc_id: DB_ZB25_S73`
 
 Once indexed, you can query both the collection and individual documents. You can also copy your own PDFs into `./data` and index them.
 
@@ -73,7 +84,7 @@ Once indexed, you can query both the collection and individual documents. You ca
 * **Behavior:** Such pages are logged and skipped during batch runs.
 
 
-## Model Recommendations for the RAG App
+## Model Recommendations for RAG-App
 ### OpenAI
 | Graph     | Step / Component         | Purpose                                          | Recommended Model        | Alternatives                        | When to Use Alternatives                                                                    |
 | --------- | ------------------------ | ------------------------------------------------ | ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -103,14 +114,4 @@ Once indexed, you can query both the collection and individual documents. You ca
 | Retrieval | `generate_answer`    | Generate final, referenced answer               | **Claude 3.5 Sonnet**          | `Gemini Pro`, `Mistral Large 2`, `Cohere Command A`  | Use **Gemini** for long/multimodal context; **Mistral** for multilingual EU needs.             |
 | Index     | `extract`            | Multimodal PDF extraction                       | **Gemini 1.5 Pro (Vision)**    | `Gemini Flash`, `Claude 3.5 Vision`, `Voyage MM-3`   | Use **Pro** for complex PDFs; **Flash** for batch jobs; **Voyage** for embedding-first setups. |
 | Index     | `save`               | Store chunks in Chroma                          | –                              | –                                                    | No LLM required.                                                                               |
-
-
-
-### Prozesse
-#### LLM-Indexer
-
-Graph-Input: 
-- State:
-  - pdf_path: Link zur PDF auf dem Server
-- Config: 
 
