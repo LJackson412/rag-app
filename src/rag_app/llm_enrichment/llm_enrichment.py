@@ -53,12 +53,6 @@ async def gen_llm_structured_data_from_imgs(
     gen_prompt: str,
     gen_data: Type[TModel]
 ) -> list[TModel | Exception]:
-    """Extrahiere strukturierte Daten aus Bild-URLs.
-
-    Gibt ein Tupel aus erfolgreichen Ergebnissen und etwaigen Fehlern zurück.
-    Einzelne Fehler werden geloggt, die Verarbeitung wird jedoch für die
-    übrigen Einträge fortgesetzt.
-    """
 
     if not imgs_urls:
         return []
@@ -100,12 +94,6 @@ async def gen_llm_structured_data_from_texts(
     gen_prompt: str,
     gen_data: Type[TModel]
 ) -> list[TModel | Exception]:
-    """Extrahiere strukturierte Daten aus Text-Chunks.
-
-    Gibt ein Tupel aus erfolgreichen Ergebnissen und etwaigen Fehlern zurück.
-    Einzelne Fehler werden geloggt, die Verarbeitung wird jedoch für die
-    übrigen Einträge fortgesetzt.
-    """
     
     if not texts:
         return []

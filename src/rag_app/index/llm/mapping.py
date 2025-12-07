@@ -4,13 +4,13 @@ from typing import Any
 from langchain_core.documents import Document
 
 from rag_app.index.llm.schema import (
-    BaseSegmentAttributes,
     CodeOrFormulaSegment,
     ImageSegment,
     OtherSegment,
     TableOrListSegment,
     TextSegment,
 )
+from rag_app.index.schema import BaseSegmentAttributes
 
 
 def map_to_docs(data: Sequence[BaseSegmentAttributes]) -> list[Document]:
