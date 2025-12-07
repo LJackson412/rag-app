@@ -47,9 +47,9 @@ class IndexConfig(BaseModel):
         ),
     ]
     extract_model: Annotated[
-        Literal["gpt-4o", "gpt-4o-mini"],
+        Literal["gpt-4.1", "gpt-4.1-mini"],
         Field(
-            default="gpt-4o",
+            default="gpt-4.1",
             description=(
                 "Multimodal model for PDF extraction"
                 "Extract and splits the page content and metadata from each PDF page as Image"

@@ -96,9 +96,9 @@ class IndexConfig(BaseModel):
 
 
     gen_img_metadata_model: Annotated[
-        Literal["gpt-4o", "gpt-4o-mini"],
+        Literal["gpt-4.1", "gpt-4.1-mini"],
         Field(
-            default="gpt-4o",
+            default="gpt-4.1",
             description=(
                 "Multimodal model for img enrichment"
                 "Generates metadata for better retrieval quality"
@@ -120,9 +120,9 @@ class IndexConfig(BaseModel):
     # ------------------------------------------------------------------------
     
     gen_table_metadata_model: Annotated[
-        Literal["gpt-4o", "gpt-4o-mini"],
+        Literal["gpt-4.1", "gpt-4.1-mini"],
         Field(
-            default="gpt-4o-mini",
+            default="gpt-4.1",
             description=(
                 "Multimodal model for table enrichment"
                 "Generates metadata for better retrieval quality"

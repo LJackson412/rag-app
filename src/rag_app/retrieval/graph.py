@@ -1,9 +1,10 @@
 import asyncio
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, Dict, cast
 
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage
+from langchain_core.language_models.base import LanguageModelInput
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
@@ -59,10 +60,17 @@ async def retrieve_docs(
     user_question = cast(str, state.messages[-1].content)
 
     vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
+    
+    search_kwargs: Dict[str, Any] = {"k": k}
+
+    if doc_id is not None:
+        search_kwargs["filter"] = {"doc_id": doc_id}
 
     retriever = vstore.as_retriever(
-        search_type="similarity", search_kwargs={"k": k, "filter": {"doc_id": doc_id}}
+        search_type="similarity",
+        search_kwargs=search_kwargs,
     )
+  
 
     if include_original_question:
         queries = [user_question] + state.llm_questions
@@ -94,28 +102,46 @@ async def compress_docs(
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
     compress_docs_model = retrieval_config.compress_docs_model
-    compress_docs_prompt = retrieval_config.compress_docs_prompt
+    compress_docs_prompt: str = retrieval_config.compress_docs_prompt  # dein String
     user_question = state.messages[-1].content
 
-    prompt = PromptTemplate(
-        input_variables=["question", "doc_content"], template=compress_docs_prompt
-    )
-
-    strucuterd_llm = build_chat_model(compress_docs_model).with_structured_output(
+    structured_llm = build_chat_model(compress_docs_model).with_structured_output(
         LLMDecision
     )
 
-    chain = prompt | strucuterd_llm
+    llm_inputs: list[LanguageModelInput] = []
+    for doc in state.retrieved_docs:
+        
+        extracted = doc.metadata.get("extracted_content", "N/A")
+        
+        if doc.metadata.get("chunk_type") == "Image":
+            text_prompt = compress_docs_prompt.format(
+                question=user_question,
+                doc_content="Image",
+            )
 
-    inputs = [
-        {
-            "question": user_question,
-            "doc_content": d.metadata.get("extracted_content", "N/A"),
-        }
-        for d in state.retrieved_docs
-    ]
+            llm_inputs.append(
+                [
+                    HumanMessage(
+                        content=[
+                            {"type": "text", "text": text_prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": extracted},
+                            },
+                        ]
+                    )
+                ]
+            )
+        else:
+            text_prompt = compress_docs_prompt.format(
+                question=user_question,
+                doc_content=extracted,
+            )
 
-    llm_decisions = cast(list[LLMDecision], await chain.abatch(inputs))
+            llm_inputs.append([HumanMessage(content=text_prompt)])
+
+    llm_decisions = cast(list[LLMDecision], await structured_llm.abatch(llm_inputs))
 
     filtered_docs = []
     for dec, doc in zip(llm_decisions, state.retrieved_docs, strict=True):
