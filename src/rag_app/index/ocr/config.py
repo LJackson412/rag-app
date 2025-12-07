@@ -60,17 +60,21 @@ class IndexConfig(BaseModel):
     ]
     # ------------------------------------------------------------------------
     
-    gen_text_metadata_model: Annotated[
+    gen_metadata_model: Annotated[
         Literal["gpt-4.1", "gpt-4.1-mini"],
         Field(
             default="gpt-4.1",
-             description=(
-                "Multimodal model for img enrichment"
-                "Generates metadata for better retrieval quality"
+            description=(
+                "Model for metadata enrichment across text, image and table segments "
+                "Generates metadata for better retrieval quality "
                 "As an example, a retrieval_summary is formed, which is used to retrieve this segment"
             ),
             json_schema_extra={
-                "langgraph_nodes": ["extract_text"],
+                "langgraph_nodes": [
+                    "extract_text",
+                    "extract_imgs",
+                    "extract_tables",
+                ],
             },
         ),
     ]
@@ -95,20 +99,6 @@ class IndexConfig(BaseModel):
     # ------------------------------------------------------------------------
 
 
-    gen_img_metadata_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
-        Field(
-            default="gpt-4.1",
-            description=(
-                "Multimodal model for img enrichment"
-                "Generates metadata for better retrieval quality"
-                "As an example, a retrieval_summary is formed, which is used to retrieve this segment"
-            ),
-            json_schema_extra={
-                "langgraph_nodes": ["extract_imgs"],
-            },
-        ),
-    ]
     gen_img_metadata_prompt: str = Field(
         default=GEN_IMG_METADATA_PROMPT,
         description="System prompt for generating metadata",
@@ -118,21 +108,7 @@ class IndexConfig(BaseModel):
         },
     )
     # ------------------------------------------------------------------------
-    
-    gen_table_metadata_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
-        Field(
-            default="gpt-4.1",
-            description=(
-                "Multimodal model for table enrichment"
-                "Generates metadata for better retrieval quality"
-                "As an example, a retrieval_summary is formed, which is used to retrieve this segment"
-            ),
-            json_schema_extra={
-                "langgraph_nodes": ["extract"],
-            },
-        ),
-    ]
+
     gen_table_metadata_prompt: str = Field(
         default=GEN_TABLE_METADATA_PROMPT,
         description="System prompt for generating metadata",

@@ -46,9 +46,7 @@ async def extract_metadata(
     
     collection_id = index_config.collection_id
     doc_id = index_config.doc_id
-    gen_text_metadata_model = index_config.gen_text_metadata_model
-    gen_img_metadata_model = index_config.gen_img_metadata_model
-    gen_table_metadata_model = index_config.gen_table_metadata_model
+    gen_metadata_model = index_config.gen_metadata_model
     embedding_model = index_config.embedding_model
   
 
@@ -59,9 +57,7 @@ async def extract_metadata(
         "doc_id": doc_id,
         "collection_id": collection_id,
         "embedding_model": embedding_model,
-        "gen_text_metadata_model": gen_text_metadata_model,
-        "gen_img_metadata_model": gen_img_metadata_model,
-        "gen_table_metadata_model": gen_table_metadata_model
+        "gen_metadata_model": gen_metadata_model,
     }
 
     return {"document_metadata": metadata}
@@ -76,7 +72,7 @@ async def extract_text(
 
     collection_id = index_config.collection_id
     doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_text_metadata_model
+    gen_metadata_model = index_config.gen_metadata_model
     gen_metadata_prompt = index_config.gen_text_metadata_prompt
     separators = index_config.splitter_seperators
     chunk_size = index_config.splitter_chunk_size
@@ -157,7 +153,7 @@ async def extract_imgs(
 
     collection_id = index_config.collection_id
     doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_img_metadata_model
+    gen_metadata_model = index_config.gen_metadata_model
     gen_metadata_prompt = index_config.gen_img_metadata_prompt
 
     pdf_imgs = load_imgs_from_pdf(state.path)
@@ -225,7 +221,7 @@ async def extract_tables(
 
     collection_id = index_config.collection_id
     doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_table_metadata_model
+    gen_metadata_model = index_config.gen_metadata_model
     gen_metadata_prompt = index_config.gen_table_metadata_prompt
  
     pdf_tables = await asyncio.to_thread(load_tables_from_pdf, state.path)
