@@ -28,6 +28,6 @@ Guidelines:
 Question:
 {question}
 
-Document Segments:
+Document Segments:\n\n
 {docs}
 """

@@ -161,15 +161,9 @@ async def generate_answer(
     generate_answer_prompt = retrieval_config.generate_answer_prompt
     user_question = state.messages[-1].content
 
-    prompt = PromptTemplate(
-        input_variables=["question", "docs"], template=generate_answer_prompt
-    )
-
     strucuterd_llm = build_chat_model(generate_answer_model).with_structured_output(
         LLMAnswer, include_raw=True
     )
-
-    chain = prompt | strucuterd_llm
 
     def _prepare_docs_for_prompt(docs: list[Document]) -> str:
         if not docs:
@@ -196,12 +190,13 @@ async def generate_answer(
         return "\n".join(parts)
 
     filtered_docs = state.filtered_docs
-    inputs = {
-        "question": user_question,
-        "docs": _prepare_docs_for_prompt(filtered_docs),
-    }
+    prompt = generate_answer_prompt.format(
+        question=user_question,
+        docs=_prepare_docs_for_prompt(filtered_docs)
+    )
+    llm_input = HumanMessage(content=prompt)
 
-    result = await chain.ainvoke(inputs)
+    result = await strucuterd_llm.ainvoke([llm_input])
 
     ai_message = result["raw"]
     llm_answer = cast(LLMAnswer, result["parsed"])
