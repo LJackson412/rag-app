@@ -2,7 +2,7 @@
 .venv
 __pycache__
 rag_app.egg-info
-.chroma_directory/
+# .chroma_directory/
 .pytest_cache
 .mypy_cache
 .langgraph_api
