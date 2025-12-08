@@ -10,83 +10,92 @@ start
 :Transfer State & Config;
     note left
         State:
-        - pdf path
+        - messages
+        - llm_questions
+        - retrieved_docs
+        - filtered_docs
 
         Config:
         - collection_id
         - doc_id
-
         - embedding_model
-        - generate_questions_prompt
         - generate_questions_model
+        - generate_questions_prompt
         - number_of_llm_generated_questions
         - number_of_docs_to_retrieve
         - include_original_question
-
         - compress_docs_model
         - compress_docs_prompt
-
         - generate_answer_model
         - generate_answer_prompt
     end note
 
 
-partition "Retrieval-Service" {
+partition "generate_questions" {
 
-    repeat
+:Prepare prompt with question + number_of_llm_generated_questions;
+:LLM (generate_questions_model) creates semantic follow-up questions -> list[str];
+:Add llm_questions to state;
 
-    partition "1-Stage-Retrieval: SimilarityThresholdRetriever" {
-      
- 
-        :Similarity Search mit Ähnlichkeits-Score ausführen;
-          if (Score >= Threshold?) then (Ja)
-            :Dokumente übernehmen;
-          else (Nein)
-            :Dokumente exkludieren;
-          endif
-        :Dokumente der Ergebnisliste hinzufügen;
-    }
+}
 
 
-    partition "2-Stage-Retrieval: LLMChainFilterCompressor" {
-        repeat
-          :Control und Dokument in Prompt injizieren;
-          :Prompt an LLM übermitteln;
-          :LLM bewertet Relevanz;
-          if (Relevant?) then (True)
-              :Dokument übernehmen;
-            else (False)
-              :Dokument exkludieren;
-            endif
-          :Dokument Liste hinzufügen;
-        repeat while (Weiteres Dokument?) is (ja) not (nein);
-    }
-    :State erweitern;
+partition "retrieve" {
 
+:Load vstore (collection_id, embedding_model);
+:Build queries: llm_questions [+ original question if enabled];
+repeat
+
+    :Run similarity search for query (k, optional doc_id filter);
+    :Collect docs per query;
+
+repeat while (Weitere Query?) is (Ja) not (Nein)
+
+:Deduplicate docs by chunk_id;
+:Add retrieved_docs to state;
     note left
-    + docs: list[Document]
+        + retrieved_docs: list[Document]
     end note
 
-    repeat while (Weitere Controls?) is (ja) not (nein);
-   
+}
+
+
+partition "compress_docs" {
+
+repeat
+
+    :Format compress_docs_prompt with question + doc content
+    (Images via image_url);
+    :LLM (compress_docs_model) decides relevance -> LLMDecision;
+    if (Relevant?) then (Ja)
+        :Dokument übernehmen;
+    else (Nein)
+        :Dokument exkludieren;
+    endif
+
+repeat while (Weiteres Dokument?) is (Ja) not (Nein)
+
+:Add filtered_docs to state;
+    note left
+        + filtered_docs: list[Document]
+    end note
 
 }
 
 
-partition "Audit-Service" {
-    repeat
-        :Control + Dokumente in Prompt injizieren;
-        :Prompt an LLM übermitteln;
-        :LLM führt Audit durch;
-        :Ergebnisse empfangen;
-        :State erweitern;
-          note left
-          + audit_result: AIMessage
-          end note
-    repeat while (Weitere Control?) is (ja) not (nein);
- 
-}
+partition "generate_answer" {
 
+:Prepare prompt with question + filtered_docs;
+:LLM (generate_answer_model) returns LLMAnswer + raw AIMessage;
+:Select llm_evidence_docs by chunk_id;
+:Add messages, llm_answer, llm_evidence_docs to state;
+    note left
+        + messages: list[AIMessage]
+        + llm_answer: LLMAnswer
+        + llm_evidence_docs: list[Document]
+    end note
+
+}
 
 
 stop
