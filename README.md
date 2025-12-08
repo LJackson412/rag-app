@@ -12,8 +12,8 @@ Ein modularer **Retrieval-Augmented-Generation (RAG)**-Stack mit zwei Index-Pipe
 ### Index-Prozesse
 | Pipeline | Diagramm | Studio-Ansicht |
 | --- | --- | --- |
-| **OCR-Indexer**: Extrahiert Text aus PDF-Seiten (PNG-Bilder), reichert ihn mit LLM-Metadaten an und persistiert in Chroma. | ![UML: OCR-Indexer](/docs/index_ocr_graph.puml) | ![Studio: OCR-Indexer](/docs/ocr_indexer_studio.png) |
-| **LLM-Indexer**: Nutzt LLM für Text-Extraktion und Chunking, ergänzt Metadaten und schreibt in Chroma. | ![UML: LLM-Indexer](/docs/index_llm_graph.puml) | ![Studio: LLM-Indexer](/docs/llm_indexer_studio.png) |
+| **OCR-Indexer**: Extrahiert Text aus PDF-Seiten (PNG-Bilder), reichert ihn mit LLM-Metadaten an und persistiert in Chroma. | ![UML: OCR-Indexer](/docs/index_ocr_uml.png) | ![Studio: OCR-Indexer](/docs/ocr_indexer_studio.png) |
+| **LLM-Indexer**: Nutzt LLM für Text-Extraktion und Chunking, ergänzt Metadaten und schreibt in Chroma. | ![UML: LLM-Indexer](/docs/index_llm_uml.png) | ![Studio: LLM-Indexer](/docs/llm_indexer_studio.png) |
 
 ### Retrieval-Prozess (2-Stage mit Kompression)
 - Erstes Ranking via Vektor-Ähnlichkeit, gefolgt von einer LLM-Kompression auf relevante Passagen.
@@ -21,7 +21,7 @@ Ein modularer **Retrieval-Augmented-Generation (RAG)**-Stack mit zwei Index-Pipe
 
 | Diagramm | Studio-Ansicht |
 | --- | --- |
-| ![UML: Retrieval-Graph](/docs/retrieval_graph.puml) | ![Studio: Retriever](/docs/retriever_studio.png) |
+| ![UML: Retriever](/docs/retriever_uml.png) | ![Studio: Retriever](/docs/retriever_studio.png) |
 
 ## Voraussetzungen
 - **Python 3.12** (empfohlen) und `virtualenv` oder `venv`.

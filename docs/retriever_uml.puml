@@ -1,5 +1,5 @@
 @startuml
-skinparam backgroundColor transparent
+skinparam backgroundColor #FFFFFF  
 skinparam shadowing false
 skinparam arrowColor black
 skinparam activityBackgroundColor lightgrey
