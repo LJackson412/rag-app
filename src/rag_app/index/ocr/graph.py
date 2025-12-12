@@ -244,6 +244,8 @@ def route_by_mode(state: OverallIndexState, config: RunnableConfig) -> list[str]
             "enrich_imgs_with_llm",
             "enrich_tables_with_llm",
         ]
+    elif index_config.mode == "imgs_only":
+        return ["enrich_imgs_with_llm", "save"]
     else:
         raise ValueError(f"Unsupported index mode: {index_config.mode}")
 

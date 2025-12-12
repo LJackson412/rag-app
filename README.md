@@ -77,6 +77,11 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
     - "Where is Cancom SE located and what phone number can they be reached at?" (evidence page 13)
     - "What is the percentage and absolute difference in inventories between 12/31/2023 and 03/31/2024?" (evidence page 18)
 
+### OCR indexing modes
+- `all` (default): Enrich text, image, and table segments before saving.
+- `imgs_only`: Enrich only image segments; text and table segments are saved without LLM enrichment.
+- `none`: Skip all LLM enrichment and save segments directly.
+
 ## Operations and Troubleshooting Notes
 - **Set language:** Choose the search language to match the document language, including for multimodal embeddings.
 - **Extraction:** Each segment metadata entry contains a language tag; models should answer in that language.
