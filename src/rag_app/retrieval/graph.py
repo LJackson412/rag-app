@@ -4,7 +4,7 @@ from typing import Any, Dict, cast
 
 from langchain_core.documents import Document
 from langchain_core.language_models.base import LanguageModelInput
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import HumanMessage
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
@@ -84,7 +84,7 @@ async def retrieve_docs(
         unique_docs = []
 
         for doc in documents:
-            content = doc.metadata.get("chunk_id", "N/A")
+            content = doc.metadata.get("id")
             if content not in seen_contents:
                 seen_contents.add(content)
                 unique_docs.append(doc)
@@ -101,7 +101,7 @@ async def compress_docs(
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
     compress_docs_model = retrieval_config.compress_docs_model
-    compress_docs_prompt: str = retrieval_config.compress_docs_prompt  
+    compress_docs_prompt: str = retrieval_config.compress_docs_prompt
     user_question = state.messages[-1].content
 
     structured_llm = build_chat_model(compress_docs_model).with_structured_output(
@@ -110,12 +110,18 @@ async def compress_docs(
 
     llm_inputs: list[LanguageModelInput] = []
     for doc in state.retrieved_docs:
-
-        extracted = doc.metadata.get("extracted_content", "N/A")
+        
+        if doc.metadata.get("category") == "Image":
+            content = doc.metadata.get("img_url", "")
+        elif doc.metadata.get("category") == "Table":
+            content = doc.metadata.get("text_as_html") or doc.metadata.get("text", "")
+        elif doc.metadata.get("category") == "Text":
+            content = doc.metadata.get("text", "")
+       
 
         if (
-            doc.metadata.get("chunk_type") == "ImageOCR"
-        ):  # Images from LLM-Indexer excluded, because LLM extract text from the image not base64
+            doc.metadata.get("category") == "Image"
+        ): 
             text_prompt = compress_docs_prompt.format(
                 question=user_question,
                 doc_content="Image",
@@ -128,7 +134,7 @@ async def compress_docs(
                             {"type": "text", "text": text_prompt},
                             {
                                 "type": "image_url",
-                                "image_url": {"url": extracted},
+                                "image_url": {"url": content},
                             },
                         ]
                     )
@@ -137,7 +143,7 @@ async def compress_docs(
         else:
             text_prompt = compress_docs_prompt.format(
                 question=user_question,
-                doc_content=extracted,
+                doc_content=content,
             )
 
             llm_inputs.append([HumanMessage(content=text_prompt)])
@@ -154,16 +160,26 @@ async def compress_docs(
 
 async def generate_answer(
     state: OverallRetrievalState, config: RunnableConfig
-) -> dict[str, LLMAnswer | list[Document] | AIMessage]:
+) -> dict[str, LLMAnswer | list[Document]]:
 
     retrieval_config = RetrievalConfig.from_runnable_config(config)
     generate_answer_model = retrieval_config.generate_answer_model
     generate_answer_prompt = retrieval_config.generate_answer_prompt
-    user_question = state.messages[-1].content
+    user_question = cast(str, state.messages[-1].content)
 
-    strucuterd_llm = build_chat_model(generate_answer_model).with_structured_output(
+    structured_llm = build_chat_model(generate_answer_model).with_structured_output(
         LLMAnswer
     )
+
+    def _doc_text_for_prompt(doc: Document) -> str:
+        cat = doc.metadata.get("category")
+        if cat == "Image":
+            return "Image"
+        if cat == "Table":
+            return doc.metadata.get("text_as_html") or doc.metadata.get("text", "") or ""
+        if cat == "Text":
+            return doc.metadata.get("text", "") or ""
+        return doc.page_content or doc.metadata.get("text", "") or ""
 
     def _prepare_docs_for_prompt(docs: list[Document]) -> str:
         if not docs:
@@ -177,36 +193,54 @@ async def generate_answer(
             "------------------------------------------------------------\n"
         )
 
-        parts = []
+        parts: list[str] = []
         for doc in docs:
-            meta = cast(dict[str, Any], doc.metadata)
             parts.append(
                 chunk_tpl.format(
-                    chunk_id=meta.get("chunk_id", "N/A"),
-                    doc_content=meta.get("extracted_content", "N/A"),
+                    chunk_id=doc.metadata.get("id", "N/A"),
+                    doc_content=_doc_text_for_prompt(doc),
                 )
             )
-
         return "\n".join(parts)
 
+    def _build_user_message(prompt: str, docs: list[Document]) -> HumanMessage:
+        image_urls = []
+        for doc in docs:
+            if doc.metadata.get("category") == "Image":
+                url = doc.metadata.get("img_url")
+                if url:
+                    image_urls.append(url)
+
+        # no images -> plain text prompt only
+        if not image_urls:
+            return HumanMessage(content=prompt)
+
+        # images exist -> multimodal
+        content_parts: list[str | dict[str, Any]] = [{"type": "text", "text": prompt}]
+        for url in image_urls:
+            content_parts.append({"type": "image_url", "image_url": {"url": url}})
+
+        return HumanMessage(content=content_parts)
+
     filtered_docs = state.filtered_docs
+
     prompt = generate_answer_prompt.format(
         question=user_question,
-        docs=_prepare_docs_for_prompt(filtered_docs)
+        docs=_prepare_docs_for_prompt(filtered_docs),
     )
-    llm_input = HumanMessage(content=prompt)
 
-    llm_answer  = cast(LLMAnswer, await strucuterd_llm.ainvoke([llm_input]))
+    llm_input = _build_user_message(prompt, filtered_docs)
 
-    chunk_ids = llm_answer.chunk_ids
+    # TODO: reduce llm input to match model context size
+    llm_answer = cast(LLMAnswer, await structured_llm.ainvoke([llm_input]))
+
+    chunk_ids = set(llm_answer.chunk_ids or [])
     llm_evidence_docs = [
-        doc for doc in filtered_docs if doc.metadata.get("chunk_id") in chunk_ids
+        doc for doc in filtered_docs if doc.metadata.get("id") in chunk_ids
     ]
 
-    return {
-        "llm_answer": llm_answer,
-        "llm_evidence_docs": llm_evidence_docs
-    }
+    return {"llm_answer": llm_answer, "llm_evidence_docs": llm_evidence_docs}
+
 
 
 builder = StateGraph(

@@ -37,7 +37,6 @@ def pretty_print_docs(docs: Sequence[DocOrScoredDoc]) -> None:
 
     print(f"\n{'-' * 100}\n".join(parts))
 
-
 def return_docs_on_page(
     docs: list[DocOrScoredDoc], page: int, chunk_type: str | None = None
 ) -> list[DocOrScoredDoc]:

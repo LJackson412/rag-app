@@ -59,6 +59,7 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 3. **Start run:** Execute the desired node in the Studio view or trigger the entire graph.
 
 ### Example Calls
+./data/Test_M/Test_M_1.pdf
 
 **Indexers** – existing collections (already stored in `.chroma_directory`):
 - **LLM Indexer** `collection_id: Cancom_LLM`

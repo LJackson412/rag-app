@@ -1,11 +1,9 @@
-from operator import add
-from typing import Annotated, Any
+from typing import Annotated
 
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 
-from rag_app.index.ocr.schema import ImageSegment, TableSegment, TextSegment
-from rag_app.index.schema import LLMException
+from rag_app.index.ocr.schema import Segment
 
 
 class InputIndexState(BaseModel):
@@ -18,25 +16,25 @@ class InputIndexState(BaseModel):
 
 
 class OutputIndexState(BaseModel):
-    text_segments: Annotated[
-        list[TextSegment],
+    texts: Annotated[
+        list[Segment],
         Field(
             default_factory=list,
-            description=(""),
+            description=("text segements"),
         ),
     ]
-    table_segments: Annotated[
-        list[TableSegment],
+    tables: Annotated[
+        list[Segment],
         Field(
             default_factory=list,
-            description=(""),
+            description=("table segements"),
         ),
     ]
-    image_segments: Annotated[
-        list[ImageSegment],
+    imgs: Annotated[
+        list[Segment],
         Field(
             default_factory=list,
-            description=(""),
+            description=("img segements"),
         ),
     ]
     index_docs: Annotated[
@@ -44,27 +42,12 @@ class OutputIndexState(BaseModel):
         Field(
             default_factory=list,
             description=(
-                "LangChain Document objects persisted in Chroma during the save node. Includes chunk metadata such as "
-                "doc_id, collection_id, and chunk_id that the retrieval graph relies on."
+                "LangChain Document objects persisted in Chroma during the save node."
+                "Segments are mapped to Document objects, before being stored in the vector database"
             ),
         ),
     ]
-    llm_exceptions: Annotated[list[LLMException], add] = Field(
-        default_factory=list,
-        description=(
-            "Errors raised by the LLM structured extraction nodes. Clients can inspect these "
-            "to selectively retry failed chunks without rerunning the entire indexing job."
-        ),
-    )
 
 
 class OverallIndexState(InputIndexState, OutputIndexState):
     """Combined input/output schema used as the shared state across the graph."""
-
-    document_metadata: Annotated[
-        dict[str, Any],
-        Field(
-            default_factory=dict,
-            description=(""),
-        ),
-    ]

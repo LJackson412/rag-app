@@ -1,43 +1,31 @@
 import asyncio
 import traceback
+from dataclasses import replace
 from typing import Any
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from langchain_core.runnables import RunnableConfig
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import END, START, StateGraph
 
 from rag_app.factory.factory import build_chat_model, build_vstore
 from rag_app.index.ocr.config import IndexConfig
 from rag_app.index.ocr.mapping import map_to_docs
-from rag_app.index.ocr.schema import (
-    ImageSegment,
-    LLMImageSegment,
-    LLMTableSegment,
-    LLMTextSegment,
-    TableSegment,
-    TextSegment,
-)
+from rag_app.index.ocr.schema import Segment
 from rag_app.index.ocr.state import (
     InputIndexState,
     OutputIndexState,
     OverallIndexState,
 )
-from rag_app.index.schema import LLMException
+from rag_app.index.schema import LLMException, LLMMetaData
 from rag_app.llm_enrichment.llm_enrichment import (
     gen_llm_structured_data_from_imgs,
     gen_llm_structured_data_from_texts,
 )
-from rag_app.loader.loader import (
-    load_imgs_from_pdf,
-    load_pdf_metadata,
-    load_tables_from_pdf,
-    load_texts_from_pdf,
-)
+from rag_app.loader.loader import load_and_split_pdf
 from rag_app.utils.utils import make_chunk_id
 
 
-async def extract_metadata(
+async def load_and_split(
     state: OverallIndexState,
     config: RunnableConfig,
 ) -> dict[str, Any]:
@@ -48,236 +36,179 @@ async def extract_metadata(
     doc_id = index_config.doc_id
     gen_metadata_model = index_config.gen_metadata_model
     embedding_model = index_config.embedding_model
-
-    base_metadata = load_pdf_metadata(state.path)
-
-    metadata = {
-        **base_metadata,
-        "doc_id": doc_id,
-        "collection_id": collection_id,
-        "embedding_model": embedding_model,
-        "gen_metadata_model": gen_metadata_model,
-    }
-
-    return {"document_metadata": metadata}
+    
+    segs = await asyncio.to_thread(load_and_split_pdf, state.path)
 
 
-async def extract_text(
-    state: OverallIndexState,
-    config: RunnableConfig,
-) -> dict[str, Any]:
-
-    index_config = IndexConfig.from_runnable_config(config)
-
-    collection_id = index_config.collection_id
-    doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_metadata_model
-    gen_metadata_prompt = index_config.gen_metadata_prompt
-    separators = index_config.splitter_seperators
-    chunk_size = index_config.splitter_chunk_size
-
-    pdf_texts = load_texts_from_pdf(state.path)
-
-    splitter = RecursiveCharacterTextSplitter(
-        separators=separators, chunk_size=chunk_size
-    )
-
-    chunks = []
-    pages = []
-    for pdf_text in pdf_texts:
-        page_chunks = splitter.split_text(pdf_text.text)
-        for chunk in page_chunks:
-            chunks.append(chunk)
-            pages.append(pdf_text.page_number)
-
-    llm_responses = await gen_llm_structured_data_from_texts(
-        chunks,
-        build_chat_model(gen_metadata_model),
-        gen_metadata_prompt,
-        LLMTextSegment,
-    )
-
-    document_segments: list[TextSegment] = []
-    text_exceptions: list[LLMException] = []
-    for chunk_index, (chunk, chunk_page, llm_response) in enumerate(
-        zip(chunks, pages, llm_responses, strict=True)
-    ):
-        if isinstance(llm_response, Exception):
-            text_exceptions.append(
-                LLMException(
-                    page_number=chunk_page,
-                    chunk_type="Text",
-                    chunk_index=chunk_index,
-                    message=str(llm_response),
-                    traceback="".join(traceback.format_exception(llm_response)),
-                )
+    def add_metadata(segs: list[Segment]) -> list[Segment]:
+        updated = []
+        for i, s in enumerate(segs):
+            chunk_id = make_chunk_id(
+                chunk_type=s.category,
+                collection_id=collection_id,
+                doc_id=doc_id,
+                chunk_index=i,
             )
-            continue
 
-        chunk_id = make_chunk_id(
-            chunk_type="Text",
-            collection_id=collection_id,
-            doc_id=doc_id,
-            chunk_index=chunk_index,
-        )
+            md = {
+                **s.metadata,
+                "doc_id": doc_id,
+                "collection_id": collection_id,
+                "embedding_model": embedding_model,
+                "gen_metadata_model": gen_metadata_model
+            }
 
-        text_segment = TextSegment(
-            extracted_content=chunk,
-            metadata={
-                **state.document_metadata,
-                "chunk_type": "Text",
-                "page_number": chunk_page,
-                "chunk_index": chunk_index,
-                "chunk_id": chunk_id,
-            },
-            llm_text_segment=llm_response,
-        )
-        document_segments.append(text_segment)
+            updated.append(replace(s, id=chunk_id, metadata=md))
+        return updated
+
+    tables = [s for s in segs if s.category == "Table"]
+    imgs = [s for s in segs if s.category == "Image"]
+    texts = [s for s in segs if s.category == "Text"]
+    
+    tables = add_metadata(tables)
+    imgs   = add_metadata(imgs)
+    texts  = add_metadata(texts)
 
     return {
-        "text_segments": document_segments,
-        "llm_exceptions": text_exceptions,
+        "tables": tables,
+        "imgs": imgs,
+        "texts": texts
     }
 
 
-async def extract_imgs(
+async def enrich_texts_with_llm(
     state: OverallIndexState,
     config: RunnableConfig,
 ) -> dict[str, Any]:
-
     index_config = IndexConfig.from_runnable_config(config)
 
-    collection_id = index_config.collection_id
-    doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_metadata_model
     gen_metadata_prompt = index_config.gen_metadata_prompt
+    gen_metadata_model = index_config.gen_metadata_model
 
-    pdf_imgs = load_imgs_from_pdf(state.path)
+    texts_segs = state.texts
 
-    img_urls = [img.image_url for img in pdf_imgs]
-    llm_responses = await gen_llm_structured_data_from_imgs(
+    texts_as_string = [ts.text for ts in texts_segs]
+    llm_resps = await gen_llm_structured_data_from_texts(
+        texts_as_string,
+        build_chat_model(gen_metadata_model),
+        gen_metadata_prompt,
+        LLMMetaData,
+    )
+
+    enriched_texts = []
+    for text_seg, llm_res in zip(texts_segs, llm_resps, strict=True):
+
+        if isinstance(llm_res, Exception):
+            llm_exception = LLMException(
+                page_number=text_seg.page_number,
+                message=str(llm_res),
+                traceback="".join(traceback.format_exception(llm_res)),
+            )
+            et = replace(
+                text_seg,
+                llm_metadata=None,
+                llm_exception=llm_exception
+            )
+        else:
+            et = replace(
+                text_seg,
+                llm_metadata=llm_res,
+                llm_exception=None
+            )
+
+        enriched_texts.append(et)
+
+    return {
+        "texts": enriched_texts,
+    }
+
+
+async def enrich_imgs_with_llm(
+    state: OverallIndexState,
+    config: RunnableConfig,
+) -> dict[str, Any]:
+    index_config = IndexConfig.from_runnable_config(config)
+
+    gen_metadata_prompt = index_config.gen_metadata_prompt
+    gen_metadata_model = index_config.gen_metadata_model
+    img_segments = state.imgs
+
+    img_urls = [img_seg.img_url for img_seg in img_segments]
+    llm_resps = await gen_llm_structured_data_from_imgs(
         img_urls,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
-        LLMImageSegment,
+        LLMMetaData,
     )
 
-    document_segments: list[ImageSegment] = []
-    image_exceptions: list[LLMException] = []
-    for chunk_index, (img, img_url, llm_response) in enumerate(
-        zip(pdf_imgs, img_urls, llm_responses, strict=True)
-    ):
-        if isinstance(llm_response, Exception):
-            image_exceptions.append(
-                LLMException(
-                    page_number=img.page_number,
-                    chunk_type="ImageOCR",
-                    chunk_index=chunk_index,
-                    message=str(llm_response),
-                    traceback="".join(traceback.format_exception(llm_response)),
-                )
+    enriched_imgs = []
+    for img_seg, llm_res in zip(img_segments, llm_resps, strict=True):
+
+        if isinstance(llm_res, Exception):
+            llm_exception = LLMException(
+                page_number=img_seg.page_number,
+                message=str(llm_res),
+                traceback="".join(traceback.format_exception(llm_res)),
             )
-            continue
+            ei = replace(
+                img_seg,
+                llm_metadata=None,
+                llm_exception=llm_exception
+            )
+        else:
+            ei = replace(
+                img_seg,
+                llm_metadata=llm_res,
+                llm_exception=None
+            )
 
-        chunk_id = make_chunk_id(
-            chunk_type="Image",
-            collection_id=collection_id,
-            doc_id=doc_id,
-            chunk_index=chunk_index,
-        )
+        enriched_imgs.append(ei)
 
-        img_segment = ImageSegment(
-            extracted_content=img_url,
-            metadata={
-                **state.document_metadata,
-                "chunk_type": "ImageOCR",
-                "page_number": img.page_number,
-                "ext": img.ext,
-                "chunk_index": chunk_index,
-                "chunk_id": chunk_id,
-            },
-            llm_image_segment=llm_response,
-        )
-        document_segments.append(img_segment)
-
-    return {
-        "image_segments": document_segments,
-        "llm_exceptions": image_exceptions,
-    }
+    return {"imgs": enriched_imgs}
 
 
-async def extract_tables(
+async def enrich_tables_with_llm(
     state: OverallIndexState,
     config: RunnableConfig,
 ) -> dict[str, Any]:
-
     index_config = IndexConfig.from_runnable_config(config)
 
-    collection_id = index_config.collection_id
-    doc_id = index_config.doc_id
-    gen_metadata_model = index_config.gen_metadata_model
     gen_metadata_prompt = index_config.gen_metadata_prompt
+    gen_metadata_model = index_config.gen_metadata_model
+    table_segments = state.tables
 
-    pdf_tables = await asyncio.to_thread(load_tables_from_pdf, state.path)
-
-    html_or_text_tables = []
-    for t in pdf_tables:
-        if t.html is not None:
-            html_or_text_tables.append(t.html)
-        elif t.text is not None:
-            html_or_text_tables.append(t.text)
-        else:
-            html_or_text_tables.append("table extraction failed")
-
-    llm_responses = await gen_llm_structured_data_from_texts(
-        html_or_text_tables,
+    tables_inputs = [(ts.text_as_html or ts.text) for ts in table_segments]
+    llm_resps = await gen_llm_structured_data_from_texts(
+        tables_inputs,
         build_chat_model(gen_metadata_model),
         gen_metadata_prompt,
-        LLMTableSegment,
+        LLMMetaData,
     )
 
-    document_segments: list[TableSegment] = []
-    table_exceptions: list[LLMException] = []
-    for chunk_index, (pdf_table, llm_response) in enumerate(
-        zip(pdf_tables, llm_responses, strict=True)
-    ):
-        if isinstance(llm_response, Exception):
-            table_exceptions.append(
-                LLMException(
-                    page_number=pdf_table.page_number,
-                    chunk_type="Table",
-                    chunk_index=chunk_index,
-                    message=str(llm_response),
-                    traceback="".join(traceback.format_exception(llm_response)),
-                )
+    enriched_tables = []
+    for ts, llm_res in zip(table_segments, llm_resps, strict=True):
+        
+        if isinstance(llm_res, Exception):
+            llm_exception = LLMException(
+                page_number=ts.page_number,
+                message=str(llm_res),
+                traceback="".join(traceback.format_exception(llm_res)),
             )
-            continue
+            et = replace(
+                ts,
+                llm_metadata=None,
+                llm_exception=llm_exception
+            )
+        else:
+            et = replace(
+                ts,
+                llm_metadata=llm_res,
+                llm_exception=None
+            )
 
-        chunk_id = make_chunk_id(
-            chunk_type="Table",
-            collection_id=collection_id,
-            doc_id=doc_id,
-            chunk_index=chunk_index,
-        )
+        enriched_tables.append(et)
 
-        table_segment = TableSegment(
-            extracted_content=pdf_table.html,
-            metadata={
-                **state.document_metadata,
-                "chunk_type": "Table",
-                "page_number": pdf_table.page_number,
-                "table_text": pdf_table.text,
-                "chunk_index": chunk_index,
-                "chunk_id": chunk_id,
-            },
-            llm_table_segment=llm_response,
-        )
-        document_segments.append(table_segment)
-
-    return {
-        "table_segments": document_segments,
-        "llm_exceptions": table_exceptions,
-    }
+    return {"tables": enriched_tables}
 
 
 async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, Any]:
@@ -289,8 +220,10 @@ async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, An
 
     vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
 
-    segments = state.text_segments + state.image_segments + state.table_segments
+    segments = state.texts + state.imgs + state.tables
+
     docs = map_to_docs(segments)
+
     index_docs = filter_complex_metadata(docs)
 
     if index_docs:
@@ -303,13 +236,17 @@ def route_by_mode(state: OverallIndexState, config: RunnableConfig) -> list[str]
     index_config = IndexConfig.from_runnable_config(config)
 
     if index_config.mode == "text":
-        return ["extract_text"]
+        return ["enrich_texts_with_llm"]
     elif index_config.mode == "images":
-        return ["extract_imgs"]
+        return ["enrich_imgs_with_llm"]
     elif index_config.mode == "tables":
-        return ["extract_tables"]
+        return ["enrich_tables_with_llm"]
     elif index_config.mode == "all":
-        return ["extract_imgs", "extract_text", "extract_tables"]
+        return [
+            "enrich_texts_with_llm",
+            "enrich_imgs_with_llm",
+            "enrich_tables_with_llm",
+        ]
     else:
         raise ValueError(f"Unsupported index mode: {index_config.mode}")
 
@@ -322,24 +259,25 @@ builder = StateGraph(
 )
 
 
-builder.add_node("extract_metadata", extract_metadata)
-builder.add_node("extract_text", extract_text)
-builder.add_node("extract_imgs", extract_imgs)
-builder.add_node("extract_tables", extract_tables)
+builder.add_node("load_and_split", load_and_split)
+builder.add_node("enrich_imgs_with_llm", enrich_imgs_with_llm)
+builder.add_node("enrich_tables_with_llm", enrich_tables_with_llm)
+builder.add_node("enrich_texts_with_llm", enrich_texts_with_llm)
 builder.add_node("save", save)
 
-builder.add_edge(START, "extract_metadata")
+builder.add_edge(START, "load_and_split")
 
 builder.add_conditional_edges(
-    "extract_metadata",
+    "load_and_split",
     route_by_mode,
-    ["extract_imgs", "extract_text", "extract_tables"],
+    ["enrich_imgs_with_llm", "enrich_tables_with_llm", "enrich_texts_with_llm"],
 )
 
-builder.add_edge("extract_imgs", "save")
-builder.add_edge("extract_text", "save")
-builder.add_edge("extract_tables", "save")
+builder.add_edge("enrich_texts_with_llm", "save")
+builder.add_edge("enrich_imgs_with_llm", "save")
+builder.add_edge("enrich_tables_with_llm", "save")
 builder.add_edge("save", END)
+
 
 graph = builder.compile()
 graph.name = "OCR-Indexer"

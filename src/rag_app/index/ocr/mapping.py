@@ -1,42 +1,46 @@
 from collections.abc import Sequence
-from typing import Any
 
 from langchain_core.documents import Document
 
-from rag_app.index.ocr.schema import (
-    ImageSegment,
-    TableSegment,
-    TextSegment,
-)
-from rag_app.index.schema import BaseSegmentAttributes
+from rag_app.index.ocr.schema import Segment
 
 
-def map_to_docs(data: Sequence[BaseSegmentAttributes]) -> list[Document]:
-    docs: list[Document] = []
+def map_to_docs(data: Sequence[Segment]) -> list[Document]:
 
-    def add_chunk(segment: BaseSegmentAttributes, chunk: Any) -> None:
-        metadata: dict[str, Any] = {
+    docs = []
+    for segment in data:
+
+        if segment.llm_exception is not None: # for llm exceptions no embedding
+            continue
+        
+        llm_meta = segment.llm_metadata
+        
+        if llm_meta:
+            emb_content = llm_meta.retrieval_summary
+        else: 
+            emb_content = segment.text
+        
+        metadata = {
             **segment.metadata,
-            "extracted_content": segment.extracted_content,
-            "language": chunk.language,
-            "title": chunk.title,
-            "labels": chunk.labels,
-            "category": chunk.category,
+            "llm_language": llm_meta.language if llm_meta else "",
+            "llm_title": llm_meta.title if llm_meta else "",
+            "llm_labels": llm_meta.labels if llm_meta else "",
+            "id": segment.id,
+            "source_id": segment.source_id,
+            "category": segment.category,
+            "page_number": segment.page_number,
+            "file_directory": segment.file_directory,
+            "filename": segment.filename,
+            "text": segment.text,
+            "text_as_html": segment.text_as_html,
+            "img_url": segment.img_url,
         }
 
         docs.append(
             Document(
-                page_content=chunk.retrieval_summary,
+                page_content=emb_content,
                 metadata=metadata,
             )
         )
-
-    for segment in data:
-        if isinstance(segment, TextSegment):
-            add_chunk(segment, segment.llm_text_segment)
-        elif isinstance(segment, ImageSegment):
-            add_chunk(segment, segment.llm_image_segment)
-        elif isinstance(segment, TableSegment):
-            add_chunk(segment, segment.llm_table_segment)
 
     return docs
