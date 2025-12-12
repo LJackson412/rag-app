@@ -46,11 +46,12 @@ class IndexConfig(BaseModel):
         ),
     ]
     mode: Annotated[
-        Literal["text", "images", "tables", "all"],
+        Literal["none", "all", "imgs", "tables", "texts"],
         Field(
             default="all",
             description=(
                 "The mode allows you to decide which types of content elements are indexed. "
+                "Use 'imgs' to enrich only image segments while other content is saved without LLM enrichment."
             ),
         ),
     ]

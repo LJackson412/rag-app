@@ -235,12 +235,14 @@ async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, An
 def route_by_mode(state: OverallIndexState, config: RunnableConfig) -> list[str]:
     index_config = IndexConfig.from_runnable_config(config)
 
-    if index_config.mode == "text":
-        return ["enrich_texts_with_llm"]
-    elif index_config.mode == "images":
+    if index_config.mode == "none":
+        return ["save"]
+    if index_config.mode == "imgs":
         return ["enrich_imgs_with_llm"]
-    elif index_config.mode == "tables":
+    if index_config.mode == "tables":
         return ["enrich_tables_with_llm"]
+    if index_config.mode == "texts":
+        return ["enrich_texts_with_llm"]
     elif index_config.mode == "all":
         return [
             "enrich_texts_with_llm",
@@ -270,7 +272,7 @@ builder.add_edge(START, "load_and_split")
 builder.add_conditional_edges(
     "load_and_split",
     route_by_mode,
-    ["enrich_imgs_with_llm", "enrich_tables_with_llm", "enrich_texts_with_llm"],
+    ["enrich_imgs_with_llm", "enrich_tables_with_llm", "enrich_texts_with_llm", "save"],
 )
 
 builder.add_edge("enrich_texts_with_llm", "save")

@@ -141,12 +141,12 @@ def load_and_split_pdf(path: str, lang: list[str] | None = None) -> List[Segment
 
         segment = Segment(
             id=None, # updated later
-            source_id=e.id,
+            source_id=chunk.id,
             category="Text",
             page_number=page_number,
             file_directory=file_directory,
             filename=filename,
-            text=e.text,
+            text=chunk.text,
             metadata=md
         )
         segments.append(segment)
