@@ -46,7 +46,7 @@ class IndexConfig(BaseModel):
         ),
     ]
     mode: Annotated[
-        Literal["text", "images", "tables", "all"],
+        Literal["none", "all"],
         Field(
             default="all",
             description=(
