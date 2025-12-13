@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from rag_app.factory.factory import build_chat_model, build_vstore
 from rag_app.index.llm.config import IndexConfig
+from rag_app.index.llm.loader import load_page_imgs_from_pdf, load_pdf_metadata
 from rag_app.index.llm.mapping import map_to_docs
 from rag_app.index.llm.schema import (
     CodeOrFormulaSegment,
@@ -25,7 +26,6 @@ from rag_app.index.llm.state import (
 )
 from rag_app.index.schema import LLMException
 from rag_app.llm_enrichment.llm_enrichment import gen_llm_structured_data_from_imgs
-from rag_app.loader.loader import load_page_imgs_from_pdf, load_pdf_metadata
 from rag_app.utils.utils import make_chunk_id
 
 
