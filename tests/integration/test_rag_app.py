@@ -71,6 +71,23 @@ CASES = [
         },
         
     ],
+    [
+        {
+            "question": "Wo wohnt Luca Koch?",
+            "path": "./data/Test/Test.docx",
+        },
+        # Indexing config
+        {
+            "doc_id": "1_Test_Docx",
+            "collection_id": "Test"
+        },
+        # Retrieval config
+        {
+            "doc_id": "1_Test_Docx",
+            "collection_id": "Test",
+        },
+        
+    ],
 
 ]
 
