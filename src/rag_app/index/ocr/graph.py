@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from rag_app.factory.factory import build_chat_model, build_vstore
 from rag_app.index.ocr.config import IndexConfig
+from rag_app.index.ocr.loader import load_pdf
 from rag_app.index.ocr.mapping import map_to_docs
 from rag_app.index.ocr.schema import Segment
 from rag_app.index.ocr.state import (
@@ -21,7 +22,6 @@ from rag_app.llm_enrichment.llm_enrichment import (
     gen_llm_structured_data_from_imgs,
     gen_llm_structured_data_from_texts,
 )
-from rag_app.loader.loader import load_and_split_pdf
 from rag_app.utils.utils import make_chunk_id
 
 
@@ -37,7 +37,7 @@ async def load_and_split(
     gen_metadata_model = index_config.gen_metadata_model
     embedding_model = index_config.embedding_model
     
-    segs = await asyncio.to_thread(load_and_split_pdf, state.path)
+    segs = await asyncio.to_thread(load_pdf, state.path)
 
 
     def add_metadata(segs: list[Segment]) -> list[Segment]:
