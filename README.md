@@ -63,6 +63,7 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 ./data/Test/Test.csv
 ./data/Test/Test.docx
 ./data/Test/Test.xlsx
+./data/Test/Test.png
 
 **Indexers** – existing collections (already stored in `.chroma_directory`):
 - **LLM Indexer** `collection_id: Cancom_LLM`

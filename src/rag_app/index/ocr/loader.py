@@ -6,6 +6,7 @@ from unstructured.chunking.title import chunk_by_title
 from unstructured.documents.elements import Element
 from unstructured.partition.csv import partition_csv
 from unstructured.partition.docx import partition_docx
+from unstructured.partition.image import partition_image
 from unstructured.partition.pdf import partition_pdf
 from unstructured.partition.xlsx import partition_xlsx
 
@@ -126,6 +127,62 @@ def load_pdf(
     return segments
 
 
+
+def load_imgs(
+    path: str,
+    lang: list[str] | None = None,
+    chunking: ChunkingConfig = DEFAULT_CHUNKING,
+) -> list[Segment]:
+    if lang is None:
+        lang = ["eng", "deu"]
+
+    elements = partition_image(
+        filename=path,
+        strategy="hi_res",
+        infer_table_structure=True,
+        pdf_infer_table_structure=True,
+        extract_images_in_pdf=True,
+        extract_image_block_types=["Image"],
+        extract_image_block_to_payload=True,
+        languages=lang,
+    )
+
+    img_elements = [e for e in elements if e.category == "Image"]
+    table_elements = [e for e in elements if e.category == "Table"]
+    text_elements = [e for e in elements if e.category not in ("Table", "Image")]
+
+    segments: list[Segment] = []
+    segments += [_segment_from_element(e, category="Image") for e in img_elements]
+
+    # Table elements are not merged, regardless of chunk size
+    # and if a table is too large, only that table is split internally.
+    for e in table_elements:
+        for c in chunk_by_title(
+            [e],
+            max_characters=chunking.max_characters,
+            new_after_n_chars=chunking.new_after_n_chars,
+            overlap=chunking.overlap,
+            overlap_all=chunking.overlap_all,
+            combine_text_under_n_chars=0,
+            multipage_sections=chunking.multipage_sections,
+            include_orig_elements=chunking.include_orig_elements,
+        ):
+            segments.append(_segment_from_element(c, category="Table"))
+
+    for c in chunk_by_title(
+        text_elements,
+        max_characters=chunking.max_characters,
+        new_after_n_chars=chunking.new_after_n_chars,
+        overlap=chunking.overlap,
+        overlap_all=chunking.overlap_all,
+        combine_text_under_n_chars=chunking.combine_text_under_n_chars,
+        multipage_sections=chunking.multipage_sections,
+        include_orig_elements=chunking.include_orig_elements,
+    ):
+        segments.append(_segment_from_element(c, category="Text"))
+
+    return segments
+
 def load_csv(
     path: str,
     chunking: ChunkingConfig = DEFAULT_CHUNKING,
@@ -236,6 +293,8 @@ def load(path: str, lang: list[str] | None = None) -> list[Segment]:
         return load_xlsx(path)
     if suffix == ".docx":
         return load_docx(path)
+    if suffix in (".png", ".jpg", ".heic"):
+        return load_imgs(path)
 
     supported = [".pdf", ".csv", ".docx"]
     raise ValueError(f"Unsupported file type: {suffix}. Supported types are {supported}.")
