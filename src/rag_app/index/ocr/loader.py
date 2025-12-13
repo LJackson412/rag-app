@@ -1,13 +1,76 @@
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from unstructured.chunking.title import chunk_by_title
+from unstructured.documents.elements import Element
 from unstructured.partition.csv import partition_csv
 from unstructured.partition.pdf import partition_pdf
 
 from rag_app.index.ocr.schema import Segment
 
+COMMON_MD_DEFAULTS = {
+    "page_number": -1,
+    "file_directory": "",
+    "filename": "",
+}
 
-def load_pdf(path: str, lang: list[str] | None = None) -> list[Segment]:
+CATEGORY_MD_FIELDS: dict[str, dict[str, tuple[str, Any]]] = {
+    "Image": {
+        "img_base64": ("image_base64", ""),
+        "img_mime_type": ("image_mime_type", ""),
+    },
+    "Table": {
+        "text_as_html": ("text_as_html", ""),
+    },
+    "Text": {},
+}
+
+def _segment_from_element(element: Element, category: str) -> Segment:
+    md = element.metadata.to_dict()
+
+    # common
+    page_number = md.pop("page_number", COMMON_MD_DEFAULTS["page_number"])
+    file_directory = md.pop("file_directory", COMMON_MD_DEFAULTS["file_directory"])
+    filename = md.pop("filename", COMMON_MD_DEFAULTS["filename"])
+
+    # category-specific
+    extra_kwargs: dict[str, Any] = {}
+    for seg_field, (md_key, default) in CATEGORY_MD_FIELDS.get(category, {}).items():
+        val = md.pop(md_key, default)
+        extra_kwargs[seg_field] = val or default  # falls None/"" -> default
+
+    return Segment(
+        id=None,  # updated later
+        source_id=element.id,
+        category=category,
+        page_number=page_number,
+        file_directory=file_directory,
+        filename=filename,
+        text=element.text,
+        metadata=md,
+        **extra_kwargs,
+    )
+
+@dataclass(frozen=True)
+class ChunkingConfig:
+    max_characters: int = 4500 # Hard-Limit: kein Chunk wird länger als das :contentReference[oaicite:1]{index=1}
+    new_after_n_chars: int = 3500 # Soft-Limit: lieber neuen Chunk starten, auch wenn noch Platz wäre :contentReference[oaicite:2]{index=2}
+    overlap: int = 0 # Overlap (Zeichen) – standardmäßig NUR bei Splits oversized Elemente :contentReference[oaicite:3]{index=3}
+    overlap_all: bool = False # Overlap auch zwischen “normalen” Chunks anwenden :contentReference[oaicite:4]{index=4}
+    combine_text_under_n_chars: int = 600 # # Kleine “Pseudo-Titel”-Sektionen zusammenführen (by_title-spezifisch) :contentReference[oaicite:5]{index=5}
+    multipage_sections: bool = True # Chunks über Seitenumbrüche hinweg (by_title-spezifisch) :contentReference[oaicite:6]{index=6}
+    include_orig_elements: bool = True # Original-Elemente in chunk.metadata.orig_elements behalten (hilfreich fürs Debugging) :contentReference[oaicite:7]{index=7}
+
+
+DEFAULT_CHUNKING = ChunkingConfig()
+
+
+def load_pdf(
+    path: str,
+    lang: list[str] | None = None,
+    chunking: ChunkingConfig = DEFAULT_CHUNKING,
+) -> list[Segment]:
     if lang is None:
         lang = ["eng", "deu"]
 
@@ -22,117 +85,70 @@ def load_pdf(path: str, lang: list[str] | None = None) -> list[Segment]:
         languages=lang,
     )
 
-    segments = []
-    for e in elements:
+    img_elements = [e for e in elements if e.category == "Image"]
+    table_elements = [e for e in elements if e.category == "Table"]
+    text_elements = [e for e in elements if e.category not in ("Table", "Image")]
 
-        if e.category in ("Image"):
-            md = e.metadata.to_dict()
+    segments: list[Segment] = []
+    segments += [_segment_from_element(e, category="Image") for e in img_elements]
 
-            page_number = md.pop("page_number", -1)
-            file_directory = md.pop("file_directory", "")
-            filename = md.pop("filename", "")
-            img_base64 = md.pop("image_base64", "") or ""
-            img_mime_type = md.pop("image_mime_type", "") or ""
+    # Table elements are not merged, regardless of chunk size
+    # and if a table is too large, only that table is split internally.
+    for e in table_elements:
+        for c in chunk_by_title(
+            [e],  
+            max_characters=chunking.max_characters,
+            new_after_n_chars=chunking.new_after_n_chars,
+            overlap=chunking.overlap,
+            overlap_all=chunking.overlap_all,
+            combine_text_under_n_chars=0,  
+            multipage_sections=chunking.multipage_sections,      
+            include_orig_elements=chunking.include_orig_elements,
+        ):
+            segments.append(_segment_from_element(c, category="Table"))
 
-            segment = Segment(
-                id=None,  # updated later
-                source_id=e.id,
-                category="Image",
-                page_number=page_number,
-                file_directory=file_directory,
-                filename=filename,
-                text=e.text,
-                img_base64=img_base64,
-                img_mime_type=img_mime_type,
-                metadata=md,
-            )
-            segments.append(segment)
-
-        if e.category in ("Table"):
-            md = e.metadata.to_dict()
-
-            page_number = md.pop("page_number", -1)
-            file_directory = md.pop("file_directory", "")
-            filename = md.pop("filename", "")
-            text_as_html = md.pop("text_as_html", "") or ""
-
-            segment = Segment(
-                id=None,  # updated later
-                source_id=e.id,
-                category="Table",
-                page_number=page_number,
-                file_directory=file_directory,
-                filename=filename,
-                text=e.text,
-                text_as_html=text_as_html,
-                metadata=md,
-            )
-            segments.append(segment)
-
-    filtered_elements = [e for e in elements if e.category not in ("Table", "Image")]
-    chunks = chunk_by_title(filtered_elements, include_orig_elements=True)
-
-    for chunk in chunks:
-        md = chunk.metadata.to_dict()
-
-        page_number = md.pop("page_number", -1)
-        file_directory = md.pop("file_directory", "")
-        filename = md.pop("filename", "")
-
-        segment = Segment(
-            id=None,  # updated later
-            source_id=chunk.id,
-            category="Text",
-            page_number=page_number,
-            file_directory=file_directory,
-            filename=filename,
-            text=chunk.text,
-            metadata=md,
-        )
-        segments.append(segment)
+    for c in chunk_by_title(
+        text_elements,
+        max_characters=chunking.max_characters,
+        new_after_n_chars=chunking.new_after_n_chars,
+        overlap=chunking.overlap,
+        overlap_all=chunking.overlap_all,
+        combine_text_under_n_chars=chunking.combine_text_under_n_chars,
+        multipage_sections=chunking.multipage_sections,
+        include_orig_elements=chunking.include_orig_elements,
+    ):
+        segments.append(_segment_from_element(c, category="Text"))
 
     return segments
 
 
-def load_csv(path: str) -> list[Segment]:
-
-    elements = partition_csv(filename=path)
+def load_csv(
+    path: str,
+    chunking: ChunkingConfig = DEFAULT_CHUNKING,
+) -> list[Segment]:
+    table_elements = partition_csv(filename=path)
 
     segments = []
-    for e in elements:
-
-        md = e.metadata.to_dict()
-
-        page_number = md.pop("page_number", -1)
-        file_directory = md.pop("file_directory", "")
-        filename = md.pop("filename", "")
-        text_as_html = md.pop("text_as_html", "") or ""
-
-        segment = Segment(
-            id=None,  # updated later
-            source_id=e.id,
-            category="Table",
-            page_number=page_number,
-            file_directory=file_directory,
-            filename=filename,
-            text=e.text,
-            text_as_html=text_as_html,
-            metadata=md,
-        )
-        segments.append(segment)
-
+    # Table elements are not merged, regardless of chunk size
+    # and if a table is too large, only that table is split internally.
+    for e in table_elements:
+        for c in chunk_by_title(
+            [e],  
+            max_characters=chunking.max_characters,
+            new_after_n_chars=chunking.new_after_n_chars,
+            overlap=chunking.overlap,
+            overlap_all=chunking.overlap_all,
+            combine_text_under_n_chars=0,  
+            multipage_sections=chunking.multipage_sections,      
+            include_orig_elements=chunking.include_orig_elements,
+        ):
+            segments.append(_segment_from_element(c, category="Table"))
+    
     return segments
+
 
 
 def load(path: str, lang: list[str] | None = None) -> list[Segment]:
-    """
-    Load OCR-able files into ``Segment`` objects.
-
-    Supported formats are PDF (``.pdf``) and CSV (``.csv``). The function detects the
-    extension case-insensitively and delegates to ``load_pdf`` or ``load_csv``. When the
-    extension is not recognized, a ``ValueError`` is raised listing the supported types.
-    """
-
     suffix = Path(path).suffix.lower()
 
     if suffix == ".pdf":
