@@ -61,6 +61,7 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 ### Example Calls
 ./data/Test/Test_M_1.pdf
 ./data/Test/Test_User.csv
+./data/Test/Test.docx
 
 **Indexers** – existing collections (already stored in `.chroma_directory`):
 - **LLM Indexer** `collection_id: Cancom_LLM`

@@ -5,6 +5,7 @@ from typing import Any
 from unstructured.chunking.title import chunk_by_title
 from unstructured.documents.elements import Element
 from unstructured.partition.csv import partition_csv
+from unstructured.partition.docx import partition_docx
 from unstructured.partition.pdf import partition_pdf
 
 from rag_app.index.ocr.schema import Segment
@@ -25,6 +26,7 @@ CATEGORY_MD_FIELDS: dict[str, dict[str, tuple[str, Any]]] = {
     },
     "Text": {},
 }
+
 
 def _segment_from_element(element: Element, category: str) -> Segment:
     md = element.metadata.to_dict()
@@ -52,15 +54,16 @@ def _segment_from_element(element: Element, category: str) -> Segment:
         **extra_kwargs,
     )
 
+
 @dataclass(frozen=True)
 class ChunkingConfig:
-    max_characters: int = 4500 # Hard-Limit: kein Chunk wird länger als das :contentReference[oaicite:1]{index=1}
-    new_after_n_chars: int = 3500 # Soft-Limit: lieber neuen Chunk starten, auch wenn noch Platz wäre :contentReference[oaicite:2]{index=2}
-    overlap: int = 0 # Overlap (Zeichen) – standardmäßig NUR bei Splits oversized Elemente :contentReference[oaicite:3]{index=3}
-    overlap_all: bool = False # Overlap auch zwischen “normalen” Chunks anwenden :contentReference[oaicite:4]{index=4}
-    combine_text_under_n_chars: int = 600 # # Kleine “Pseudo-Titel”-Sektionen zusammenführen (by_title-spezifisch) :contentReference[oaicite:5]{index=5}
-    multipage_sections: bool = True # Chunks über Seitenumbrüche hinweg (by_title-spezifisch) :contentReference[oaicite:6]{index=6}
-    include_orig_elements: bool = True # Original-Elemente in chunk.metadata.orig_elements behalten (hilfreich fürs Debugging) :contentReference[oaicite:7]{index=7}
+    max_characters: int = 4500  # Hard-Limit: kein Chunk wird länger als das
+    new_after_n_chars: int = 3500  # Soft-Limit: lieber neuen Chunk starten
+    overlap: int = 0  # Overlap (Zeichen) – standardmäßig NUR bei Splits oversized Elemente
+    overlap_all: bool = False  # Overlap auch zwischen “normalen” Chunks anwenden
+    combine_text_under_n_chars: int = 600  # Kleine “Pseudo-Titel”-Sektionen zusammenführen
+    multipage_sections: bool = True  # Chunks über Seitenumbrüche hinweg
+    include_orig_elements: bool = True  # Original-Elemente in chunk.metadata.orig_elements behalten
 
 
 DEFAULT_CHUNKING = ChunkingConfig()
@@ -96,13 +99,13 @@ def load_pdf(
     # and if a table is too large, only that table is split internally.
     for e in table_elements:
         for c in chunk_by_title(
-            [e],  
+            [e],
             max_characters=chunking.max_characters,
             new_after_n_chars=chunking.new_after_n_chars,
             overlap=chunking.overlap,
             overlap_all=chunking.overlap_all,
-            combine_text_under_n_chars=0,  
-            multipage_sections=chunking.multipage_sections,      
+            combine_text_under_n_chars=0,
+            multipage_sections=chunking.multipage_sections,
             include_orig_elements=chunking.include_orig_elements,
         ):
             segments.append(_segment_from_element(c, category="Table"))
@@ -128,24 +131,73 @@ def load_csv(
 ) -> list[Segment]:
     table_elements = partition_csv(filename=path)
 
-    segments = []
+    segments: list[Segment] = []
     # Table elements are not merged, regardless of chunk size
     # and if a table is too large, only that table is split internally.
     for e in table_elements:
         for c in chunk_by_title(
-            [e],  
+            [e],
             max_characters=chunking.max_characters,
             new_after_n_chars=chunking.new_after_n_chars,
             overlap=chunking.overlap,
             overlap_all=chunking.overlap_all,
-            combine_text_under_n_chars=0,  
-            multipage_sections=chunking.multipage_sections,      
+            combine_text_under_n_chars=0,
+            multipage_sections=chunking.multipage_sections,
             include_orig_elements=chunking.include_orig_elements,
         ):
             segments.append(_segment_from_element(c, category="Table"))
-    
+
     return segments
 
+
+def load_docx(
+    path: str,
+    chunking: ChunkingConfig = DEFAULT_CHUNKING,
+) -> list[Segment]:
+    elements = partition_docx(
+        filename=path,
+        infer_table_structure=True,
+        include_page_breaks=True,
+    )
+
+    # Note: Unstructured currently often does not deliver image elements for DOCX.
+    # If any do appear, however, they are mapped correctly.
+    img_elements = [e for e in elements if e.category == "Image"]
+    table_elements = [e for e in elements if e.category == "Table"]
+    text_elements = [e for e in elements if e.category not in ("Table", "Image")]
+
+    segments: list[Segment] = []
+    segments += [_segment_from_element(e, category="Image") for e in img_elements]
+
+    # Table elements are not merged, regardless of chunk size
+    # and if a table is too large, only that table is split internally.
+    for e in table_elements:
+        for c in chunk_by_title(
+            [e],
+            max_characters=chunking.max_characters,
+            new_after_n_chars=chunking.new_after_n_chars,
+            overlap=chunking.overlap,
+            overlap_all=chunking.overlap_all,
+            combine_text_under_n_chars=0,
+            multipage_sections=chunking.multipage_sections,
+            include_orig_elements=chunking.include_orig_elements,
+        ):
+            segments.append(_segment_from_element(c, category="Table"))
+
+    # Text: by-title chunking as in PDF
+    for c in chunk_by_title(
+        text_elements,
+        max_characters=chunking.max_characters,
+        new_after_n_chars=chunking.new_after_n_chars,
+        overlap=chunking.overlap,
+        overlap_all=chunking.overlap_all,
+        combine_text_under_n_chars=chunking.combine_text_under_n_chars,
+        multipage_sections=chunking.multipage_sections,
+        include_orig_elements=chunking.include_orig_elements,
+    ):
+        segments.append(_segment_from_element(c, category="Text"))
+
+    return segments
 
 
 def load(path: str, lang: list[str] | None = None) -> list[Segment]:
@@ -155,6 +207,8 @@ def load(path: str, lang: list[str] | None = None) -> list[Segment]:
         return load_pdf(path, lang=lang)
     if suffix == ".csv":
         return load_csv(path)
+    if suffix == ".docx":
+        return load_docx(path)
 
-    supported = [".pdf", ".csv"]
+    supported = [".pdf", ".csv", ".docx"]
     raise ValueError(f"Unsupported file type: {suffix}. Supported types are {supported}.")
