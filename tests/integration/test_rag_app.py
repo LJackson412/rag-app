@@ -24,29 +24,55 @@ class IndexGraphData(TypedDict):
 
 CASES = [
     [
+        {
+            "question": "Was ist der Maßnahmenplan?",
+            "path": "./data/Test/Test_M_1.pdf",
+        },
         # Indexing config
         {
             "doc_id": "1_Test_M_1",
-            "collection_id": "Test_M",
+            "collection_id": "Test",
         },
         # Retrieval config
         {
             "doc_id": "1_Test_M_1",
-            "collection_id": "Test_M",
+            "collection_id": "Test",
         },
     ],
     [
+        {
+            "question": "Was ist der Maßnahmenplan?",
+            "path": "./data/Test/Test_M_1.pdf",
+        },
         # Indexing config
         {
             "doc_id": "2_Test_M_1",
-            "collection_id": "Test_M",
+            "collection_id": "Test",
             "mode" : "none"
         },
         # Retrieval config
         {
             "doc_id": "2_Test_M_1",
-            "collection_id": "Test_M",
+            "collection_id": "Test",
         },
+        
+    ],
+    [
+        {
+            "question": "Wo wohnt Luca Koch?",
+            "path": "./data/Test/Test_User.csv",
+        },
+        # Indexing config
+        {
+            "doc_id": "1_Test_User_CSV",
+            "collection_id": "Test"
+        },
+        # Retrieval config
+        {
+            "doc_id": "1_Test_User_CSV",
+            "collection_id": "Test",
+        },
+        
     ],
 
 ]
@@ -55,15 +81,15 @@ CASES = [
 @pytest.fixture
 def create_config_and_input(case: list[dict[str, Any]]) -> Generator[IndexGraphData, None, None]:
     index_config = RunnableConfig(
-        configurable=case[0]
-    )
-    index_state = InputIndexState(path=DOC_PATH)
-
-    retrieval_config = RunnableConfig(
         configurable=case[1]
     )
+    index_state = InputIndexState(path=case[0]["path"])
+
+    retrieval_config = RunnableConfig(
+        configurable=case[2]
+    )
     retrieval_state = InputRetrievalState(
-        messages=[HumanMessage(content=QUESTION)]
+        messages=[HumanMessage(content=case[0]["question"])]
     )
 
     yield {
@@ -72,15 +98,13 @@ def create_config_and_input(case: list[dict[str, Any]]) -> Generator[IndexGraphD
         "retrieval_config": retrieval_config,
         "retrieval_state": retrieval_state,
     }
-
-    # cleanup pro Case
     config = IndexConfig.from_runnable_config(index_config)
     vstore = build_vstore(config.embedding_model, config.collection_id)
     vstore.delete_collection()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("case", CASES, ids=["default", "mode-none"])
+@pytest.mark.parametrize("case", CASES, ids=["pdf-default", "pdf-mode-none", "csv-default"])
 async def test_index_graph(create_config_and_input: IndexGraphData) -> None:
     data = create_config_and_input
 
