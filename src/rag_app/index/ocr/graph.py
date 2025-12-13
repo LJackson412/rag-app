@@ -9,7 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from rag_app.factory.factory import build_chat_model, build_vstore
 from rag_app.index.ocr.config import IndexConfig
-from rag_app.index.ocr.loader import load_pdf
+from rag_app.index.ocr.loader import load
 from rag_app.index.ocr.mapping import map_to_docs
 from rag_app.index.ocr.schema import Segment
 from rag_app.index.ocr.state import (
@@ -25,7 +25,7 @@ from rag_app.llm_enrichment.llm_enrichment import (
 from rag_app.utils.utils import make_chunk_id
 
 
-async def load_and_split(
+async def load_file(
     state: OverallIndexState,
     config: RunnableConfig,
 ) -> dict[str, Any]:
@@ -37,7 +37,7 @@ async def load_and_split(
     gen_metadata_model = index_config.gen_metadata_model
     embedding_model = index_config.embedding_model
     
-    segs = await asyncio.to_thread(load_pdf, state.path)
+    segs = await asyncio.to_thread(load, state.path)
 
 
     def add_metadata(segs: list[Segment]) -> list[Segment]:
@@ -261,16 +261,16 @@ builder = StateGraph(
 )
 
 
-builder.add_node("load_and_split", load_and_split)
+builder.add_node("load", load_file)
 builder.add_node("enrich_imgs_with_llm", enrich_imgs_with_llm)
 builder.add_node("enrich_tables_with_llm", enrich_tables_with_llm)
 builder.add_node("enrich_texts_with_llm", enrich_texts_with_llm)
 builder.add_node("save", save)
 
-builder.add_edge(START, "load_and_split")
+builder.add_edge(START, "load")
 
 builder.add_conditional_edges(
-    "load_and_split",
+    "load",
     route_by_mode,
     ["enrich_imgs_with_llm", "enrich_tables_with_llm", "enrich_texts_with_llm", "save"],
 )

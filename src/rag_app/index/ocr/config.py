@@ -50,7 +50,6 @@ class IndexConfig(BaseModel):
         Field(
             default="all",
             description=(
-                "The mode allows you to decide which types of content elements are indexed. "
                 "Use 'imgs' to enrich only image segments while other content is saved without LLM enrichment."
             ),
         ),

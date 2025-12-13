@@ -111,7 +111,7 @@ def load_csv(path: str) -> list[Segment]:
         segment = Segment(
             id=None,  # updated later
             source_id=e.id,
-            category="Image",
+            category="Table",
             page_number=page_number,
             file_directory=file_directory,
             filename=filename,

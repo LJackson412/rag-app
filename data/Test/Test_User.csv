@@ -1,0 +1,31 @@
+customer_id,first_name,last_name,email,phone,street,zip,city,country,signup_date,status,balance_eur,newsletter_opt_in
+1001,Anna,Müller,anna.mueller@example.com,+49-30-1234567,"Musterstraße 12",10115,Berlin,DE,2024-01-14,active,42.50,true
+1002,Max,Schneider,max.schneider@example.com,+49-89-2345678,"Hauptweg 7",80331,München,DE,2024-02-03,active,0.00,false
+1003,Lea,Fischer,lea.fischer@example.com,+49-40-3456789,"Elballee 3",20095,Hamburg,DE,2024-02-20,paused,15.99,true
+1004,Jonas,Weber,jonas.weber@example.com,+49-221-4567890,"Domplatz 1",50667,Köln,DE,2024-03-05,active,120.00,true
+1005,Sofia,Meyer,sofia.meyer@example.com,+49-711-5678901,"Gartenweg 22",70173,Stuttgart,DE,2024-03-19,active,-5.00,false
+1006,Paul,Wagner,paul.wagner@example.com,+49-69-6789012,"Parkstraße 9",60311,Frankfurt,DE,2024-04-01,active,8.75,true
+1007,Emilia,Becker,emilia.becker@example.com,+49-351-7890123,"Blumenring 4",01067,Dresden,DE,2024-04-18,inactive,0.00,false
+1008,Noah,Hoffmann,noah.hoffmann@example.com,+49-30-8901234,"Spreeufer 18",10999,Berlin,DE,2024-05-02,active,63.10,true
+1009,Mia,Schulz,mia.schulz@example.com,+49-511-9012345,"Lindenstraße 5",30159,Hannover,DE,2024-05-17,active,19.90,true
+1010,Luca,Koch,luca.koch@example.com,+49-341-0123456,"Ringstraße 30",04109,Leipzig,DE,2024-06-01,paused,0.00,false
+1011,Hannah,Richter,hannah.richter@example.com,+49-421-1122334,"Weserweg 11",28195,Bremen,DE,2024-06-12,active,250.00,true
+1012,Benjamin,Klein,benjamin.klein@example.com,+49-231-2233445,"Zechenstraße 2",44137,Dortmund,DE,2024-06-25,active,3.49,false
+1013,Lina,Wolf,lina.wolf@example.com,+49-202-3344556,"Talstraße 14",42103,Wuppertal,DE,2024-07-03,active,78.00,true
+1014,Leon,Neumann,leon.neumann@example.com,+49-681-4455667,"Saarufer 6",66111,Saarbrücken,DE,2024-07-16,inactive,0.00,false
+1015,Marie,Zimmermann,marie.zimmermann@example.com,+49-361-5566778,"Krämergasse 8",99084,Erfurt,DE,2024-08-02,active,9.99,true
+1016,Felix,Braun,felix.braun@example.com,+49-391-6677889,"Allee 19",39104,Magdeburg,DE,2024-08-21,active,33.33,false
+1017,Clara,Krüger,clara.krueger@example.com,+49-541-7788990,"Brückenweg 10",49074,Osnabrück,DE,2024-09-04,active,0.00,true
+1018,Elias,Hartmann,elias.hartmann@example.com,+49-951-8899001,"Bergstraße 21",96047,Bamberg,DE,2024-09-18,paused,12.00,false
+1019,Lara,Lange,lara.lange@example.com,+49-241-9900112,"Aachener Straße 77",52062,Aachen,DE,2024-10-01,active,5.50,true
+1020,Tim,Schmitt,tim.schmitt@example.com,+49-431-1011121,"Fördeweg 3",24103,Kiel,DE,2024-10-15,inactive,0.00,false
+1021,Nina,Berger,nina.berger@example.com,+49-551-1213141,"Uniweg 1",37073,Göttingen,DE,2024-10-28,active,18.40,true
+1022,David,Frank,david.frank@example.com,+49-721-1415161,"Marktplatz 4",76133,Karlsruhe,DE,2024-11-09,active,99.95,true
+1023,Zoé,Baumann,zoe.baumann@example.com,+49-761-1617181,"Schwarzwaldstraße 15",79098,Freiburg,DE,2024-11-22,active,7.25,false
+1024,Jakob,Schuster,jakob.schuster@example.com,+49-385-1819202,"Seeweg 12",19053,Schwerin,DE,2024-12-05,paused,0.00,true
+1025,Amelie,Krause,amelie.krause@example.com,+49-30-2021222,"Prenzlauer Allee 99",10405,Berlin,DE,2025-01-08,active,44.44,true
+1026,Oskar,Winter,oskar.winter@example.com,+49-89-2223242,"Isarstraße 6",80469,München,DE,2025-01-23,active,0.00,false
+1027,Elena,Seidel,elena.seidel@example.com,+49-40-2425262,"Alsterufer 1",20354,Hamburg,DE,2025-02-11,active,11.11,true
+1028,Tom,Brandt,tom.brandt@example.com,+49-6221-2627282,"Neckarweg 8",69117,Heidelberg,DE,2025-03-02,inactive,0.00,false
+1029,Isabel,Hahn,isabel.hahn@example.com,+49-531-2829303,"Löwenwall 5",38100,Braunschweig,DE,2025-03-19,active,2.50,true
+1030,Kevin,Scholz,kevin.scholz@example.com,+49-371-3031323,"Industriestraße 20",09111,Chemnitz,DE,2025-04-07,active,60.00,false
