@@ -2,7 +2,7 @@
   "$schema": "https://langgra.ph/schema.json",
   "dependencies": ["."],
   "graphs": {
-    "llm_indexer": "./src/rag_app/index/llm/graph.py:graph",
+    
     "ocr_indexer": "./src/rag_app/index/ocr/graph.py:graph",
     "retriever": "./src/rag_app/retrieval/graph.py:graph"
   },

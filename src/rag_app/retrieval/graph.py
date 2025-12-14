@@ -9,7 +9,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig, ensure_config
 from langgraph.graph import END, START, StateGraph
 
-from rag_app.providers.composition import build_vstore, get_provider_factory
+from rag_app.providers.composition import get_provider_factory
 from rag_app.retrieval.config import RetrievalConfig
 from rag_app.retrieval.schema import LLMAnswer, LLMDecision, LLMQuestions
 from rag_app.retrieval.state import (
@@ -29,12 +29,15 @@ async def generate_questions(
     configurable = ensured.get("configurable", {}) or {}
     provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
+    model_name = retrieval_config.generate_questions_model
+     
     number = retrieval_config.number_of_llm_generated_questions
-    generate_questions_model = retrieval_config.generate_questions_model
     user_question = state.messages[-1].content
 
     structured_llm = provider_factory.build_chat_model(
-        model_name=generate_questions_model, temp=0.3  # for semantic relevant questions
+        provider="openai",
+        model_name=model_name, 
+        temp=0.3  # for semantic relevant questions
     ).with_structured_output(LLMQuestions)
     
     generate_questions_prompt = retrieval_config.generate_questions_prompt
@@ -58,14 +61,22 @@ async def retrieve_docs(
     state: OverallRetrievalState, config: RunnableConfig
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
+    
+    model_name = retrieval_config.embedding_model
+    collection_name = retrieval_config.collection_id
+    
     doc_id = retrieval_config.doc_id
-    collection_id = retrieval_config.collection_id
-    embedding_model = retrieval_config.embedding_model
     k = retrieval_config.number_of_docs_to_retrieve
     include_original_question = retrieval_config.include_original_question
     user_question = cast(str, state.messages[-1].content)
-
-    vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
+    
+    embedding_model = provider_factory.build_embeddings(provider="openai", model_name=model_name)
+    
+    vstore = await asyncio.to_thread(provider_factory.build_vstore, embedding_model, provider="chroma", collection_name=collection_name)
 
     search_kwargs: Dict[str, Any] = {"k": k}
 
@@ -111,12 +122,14 @@ async def compress_docs(
     configurable = ensured.get("configurable", {}) or {}
     provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
-    compress_docs_model = retrieval_config.compress_docs_model
+    model_name = retrieval_config.compress_docs_model
+    
     compress_docs_prompt: str = retrieval_config.compress_docs_prompt
     user_question = state.messages[-1].content
 
     structured_llm = provider_factory.build_chat_model(
-        model_name=compress_docs_model
+        provider="openai",
+        model_name=model_name
     ).with_structured_output(LLMDecision)
 
     llm_inputs: list[LanguageModelInput] = []
@@ -179,12 +192,13 @@ async def generate_answer(
     configurable = ensured.get("configurable", {}) or {}
     provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
-    generate_answer_model = retrieval_config.generate_answer_model
+    model_name = retrieval_config.generate_answer_model
     generate_answer_prompt = retrieval_config.generate_answer_prompt
     user_question = cast(str, state.messages[-1].content)
 
     structured_llm = provider_factory.build_chat_model(
-        model_name=generate_answer_model
+        provider="openai",
+        model_name=model_name
     ).with_structured_output(LLMAnswer)
 
     def _doc_text_for_prompt(doc: Document) -> str:

@@ -4,7 +4,7 @@ from dataclasses import replace
 from typing import Any
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig, ensure_config
 from langgraph.graph import END, START, StateGraph
 
 from rag_app.index.ocr.config import IndexConfig
@@ -21,7 +21,7 @@ from rag_app.llm_enrichment.llm_enrichment import (
     gen_llm_structured_data_from_imgs,
     gen_llm_structured_data_from_texts,
 )
-from rag_app.providers.composition import build_chat_model, build_vstore
+from rag_app.providers.composition import get_provider_factory
 from rag_app.utils.utils import make_chunk_id
 
 
@@ -81,16 +81,20 @@ async def enrich_texts_with_llm(
     config: RunnableConfig,
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
-    gen_metadata_model = index_config.gen_metadata_model
+    model_name = index_config.gen_metadata_model
 
     texts_segs = state.texts
 
     texts_as_string = [ts.text for ts in texts_segs]
     llm_resps = await gen_llm_structured_data_from_texts(
         texts_as_string,
-        build_chat_model(gen_metadata_model),
+        provider_factory.build_chat_model(provider="openai", model_name=model_name),
         gen_metadata_prompt,
         LLMMetaData,
     )
@@ -128,15 +132,19 @@ async def enrich_imgs_with_llm(
     config: RunnableConfig,
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
-    gen_metadata_model = index_config.gen_metadata_model
+    model_name = index_config.gen_metadata_model
     img_segments = state.imgs
 
     img_urls = [img_seg.img_url for img_seg in img_segments]
     llm_resps = await gen_llm_structured_data_from_imgs(
         img_urls,
-        build_chat_model(gen_metadata_model),
+        provider_factory.build_chat_model(provider="openai", model_name=model_name),
         gen_metadata_prompt,
         LLMMetaData,
     )
@@ -172,15 +180,19 @@ async def enrich_tables_with_llm(
     config: RunnableConfig,
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
-    gen_metadata_model = index_config.gen_metadata_model
+    model_name = index_config.gen_metadata_model
     table_segments = state.tables
 
     tables_inputs = [(ts.text_as_html or ts.text) for ts in table_segments]
     llm_resps = await gen_llm_structured_data_from_texts(
         tables_inputs,
-        build_chat_model(gen_metadata_model),
+        provider_factory.build_chat_model(provider="openai", model_name=model_name),
         gen_metadata_prompt,
         LLMMetaData,
     )
@@ -212,13 +224,17 @@ async def enrich_tables_with_llm(
 
 
 async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, Any]:
-
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
-    collection_id = index_config.collection_id
-    embedding_model = index_config.embedding_model
+    collection_name = index_config.collection_id
+    model_name = index_config.embedding_model
 
-    vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
+    embedding_model = provider_factory.build_embeddings(provider="openai", model_name=model_name)
+    vstore = await asyncio.to_thread(provider_factory.build_vstore, embedding_model, provider="chroma", collection_name=collection_name)
 
     segments = state.texts + state.imgs + state.tables
 

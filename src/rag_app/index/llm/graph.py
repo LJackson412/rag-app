@@ -4,7 +4,7 @@ from typing import Any
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from langchain_core.documents import Document
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig, ensure_config
 from langgraph.graph import END, START, StateGraph
 
 from rag_app.index.llm.config import IndexConfig
@@ -25,7 +25,7 @@ from rag_app.index.llm.state import (
 )
 from rag_app.index.schema import LLMException
 from rag_app.llm_enrichment.llm_enrichment import gen_llm_structured_data_from_imgs
-from rag_app.providers.composition import build_chat_model, build_vstore
+from rag_app.providers.composition import get_provider_factory
 from rag_app.utils.utils import make_chunk_id
 
 
@@ -58,8 +58,13 @@ async def llm_extract(
     state: OverallIndexState, config: RunnableConfig
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
-    extract_model = index_config.extract_model
+
+    model_name = index_config.extract_model
     extract_prompt = index_config.extract_data_prompt
     doc_id = index_config.doc_id
     collection_id = index_config.collection_id
@@ -70,7 +75,7 @@ async def llm_extract(
 
     llm_responses = await gen_llm_structured_data_from_imgs(
         img_urls,
-        build_chat_model(extract_model),
+        provider_factory.build_chat_model(provider="openai", model_name=model_name),
         extract_prompt,
         LLMSegments,
     )
@@ -221,11 +226,17 @@ async def save(
 ) -> dict[str, list[Document]]:
 
     index_config = IndexConfig.from_runnable_config(config)
+    
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
 
-    collection_id = index_config.collection_id
-    embedding_model = index_config.embedding_model
 
-    vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
+    collection_name = index_config.collection_id
+    model_name = index_config.embedding_model
+
+    embedding_model = provider_factory.build_embeddings(provider="openai", model_name=model_name)
+    vstore = await asyncio.to_thread(provider_factory.build_vstore, embedding_model, provider="chroma", collection_name=collection_name)
 
     segments = (
         state.text_segments
