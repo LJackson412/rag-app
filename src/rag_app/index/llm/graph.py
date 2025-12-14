@@ -25,7 +25,11 @@ from rag_app.index.llm.state import (
 )
 from rag_app.index.schema import LLMException
 from rag_app.llm_enrichment.llm_enrichment import gen_llm_structured_data_from_imgs
-from rag_app.utils.utils import get_provider_factory_from_config, make_chunk_id
+from rag_app.utils.utils import (
+    extract_provider_and_model,
+    get_provider_factory_from_config,
+    make_chunk_id,
+)
 
 
 async def extract_metadata(
@@ -61,7 +65,7 @@ async def llm_extract(
     provider_factory = get_provider_factory_from_config(config)
 
 
-    model_name = index_config.extract_model
+    extract_provider, model_name = extract_provider_and_model(index_config.extract_model)
     extract_prompt = index_config.extract_data_prompt
     doc_id = index_config.doc_id
     collection_id = index_config.collection_id
@@ -72,7 +76,9 @@ async def llm_extract(
 
     llm_responses = await gen_llm_structured_data_from_imgs(
         img_urls,
-        provider_factory.build_chat_model(provider="openai", model_name=model_name),
+        provider_factory.build_chat_model(
+            provider=extract_provider, model_name=model_name
+        ),
         extract_prompt,
         LLMSegments,
     )
@@ -227,10 +233,20 @@ async def save(
     provider_factory = get_provider_factory_from_config(config)
 
     collection_name = index_config.collection_id
-    model_name = index_config.embedding_model
+    embedding_provider, model_name = extract_provider_and_model(
+        index_config.embedding_model
+    )
+    vstore_provider, _ = extract_provider_and_model(index_config.vectorstore)
 
-    embedding_model = provider_factory.build_embeddings(provider="openai", model_name=model_name)
-    vstore = await asyncio.to_thread(provider_factory.build_vstore, embedding_model, provider="chroma", collection_name=collection_name)
+    embedding_model = provider_factory.build_embeddings(
+        provider=embedding_provider, model_name=model_name
+    )
+    vstore = await asyncio.to_thread(
+        provider_factory.build_vstore,
+        embedding_model,
+        provider=vstore_provider,
+        collection_name=collection_name,
+    )
 
     segments = (
         state.text_segments
