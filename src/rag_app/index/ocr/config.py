@@ -90,11 +90,11 @@ class IndexConfig(BaseModel):
         description="Sepearatos for recursive text splitting",
         json_schema_extra={"langgraph_nodes": ["extract_text"]},
     )
-    vectorstore: Annotated[
-        Literal["chroma/default"],
+    vstore: Annotated[
+        Literal["chroma"],
         Field(
-            default="chroma/default",
-            description="Vector store provider and backend",
+            default="chroma",
+            description="Vector store provider",
             json_schema_extra={
                 "langgraph_nodes": ["save"],
             },

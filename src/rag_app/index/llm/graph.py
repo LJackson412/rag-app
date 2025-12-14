@@ -236,7 +236,7 @@ async def save(
     embedding_provider, model_name = extract_provider_and_model(
         index_config.embedding_model
     )
-    vstore_provider, _ = extract_provider_and_model(index_config.vectorstore)
+    vstore_provider = index_config.vstore
 
     embedding_model = provider_factory.build_embeddings(
         provider=embedding_provider, model_name=model_name

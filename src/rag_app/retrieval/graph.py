@@ -66,7 +66,7 @@ async def retrieve_docs(
     embedding_provider, model_name = extract_provider_and_model(
         retrieval_config.embedding_model
     )
-    vstore_provider, _ = extract_provider_and_model(retrieval_config.vectorstore)
+    vstore_provider = retrieval_config.vstore
     collection_name = retrieval_config.collection_id
     
     doc_id = retrieval_config.doc_id
