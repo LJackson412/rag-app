@@ -9,11 +9,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableConfig, ensure_config
 from langgraph.graph import END, START, StateGraph
 
-from rag_app.providers.composition import (
-    build_chat_model,
-    build_vstore,
-    get_provider_factory,
-)
+from rag_app.providers.composition import build_vstore, get_provider_factory
 from rag_app.retrieval.config import RetrievalConfig
 from rag_app.retrieval.schema import LLMAnswer, LLMDecision, LLMQuestions
 from rag_app.retrieval.state import (
@@ -110,13 +106,18 @@ async def compress_docs(
     state: OverallRetrievalState, config: RunnableConfig
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
+
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
+
     compress_docs_model = retrieval_config.compress_docs_model
     compress_docs_prompt: str = retrieval_config.compress_docs_prompt
     user_question = state.messages[-1].content
 
-    structured_llm = build_chat_model(compress_docs_model).with_structured_output(
-        LLMDecision
-    )
+    structured_llm = provider_factory.build_chat_model(
+        model_name=compress_docs_model
+    ).with_structured_output(LLMDecision)
 
     llm_inputs: list[LanguageModelInput] = []
     for doc in state.retrieved_docs:
@@ -173,13 +174,18 @@ async def generate_answer(
 ) -> dict[str, LLMAnswer | list[Document]]:
 
     retrieval_config = RetrievalConfig.from_runnable_config(config)
+
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    provider_factory = get_provider_factory(configurable.get("provider_factory"))
+
     generate_answer_model = retrieval_config.generate_answer_model
     generate_answer_prompt = retrieval_config.generate_answer_prompt
     user_question = cast(str, state.messages[-1].content)
 
-    structured_llm = build_chat_model(generate_answer_model).with_structured_output(
-        LLMAnswer
-    )
+    structured_llm = provider_factory.build_chat_model(
+        model_name=generate_answer_model
+    ).with_structured_output(LLMAnswer)
 
     def _doc_text_for_prompt(doc: Document) -> str:
         cat = doc.metadata.get("category")
