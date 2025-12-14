@@ -1,15 +1,19 @@
-from typing import Any, Generator, TypedDict
+from typing import Any, Generator, TypedDict, cast
 
 import pytest
+from langchain_chroma import Chroma
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from rag_app.factory.factory import build_vstore
 from rag_app.index.ocr.config import IndexConfig
 from rag_app.index.ocr.graph import graph as index_graph
 from rag_app.index.ocr.state import InputIndexState
 from rag_app.retrieval.graph import graph as retrieval_graph
 from rag_app.retrieval.state import InputRetrievalState
+from rag_app.utils.utils import (
+    extract_provider_and_model,
+    get_provider_factory_from_config,
+)
 
 
 class IndexGraphData(TypedDict):
@@ -130,7 +134,18 @@ def create_config_and_input(case: list[dict[str, Any]]) -> Generator[IndexGraphD
         "retrieval_state": retrieval_state,
     }
     config = IndexConfig.from_runnable_config(index_config)
-    vstore = build_vstore(config.embedding_model, config.collection_id)
+    provider_factory = get_provider_factory_from_config(index_config)
+    
+    embedding_provider, model_name = extract_provider_and_model(
+        config.embedding_model
+    )
+    embedding_model = provider_factory.build_embeddings(
+        provider=embedding_provider, model_name=model_name
+    )
+    
+    vstore = cast(
+        Chroma, provider_factory.build_vstore(embedding_model, config.vstore, config.collection_id)
+    )
     vstore.delete_collection()
 
 

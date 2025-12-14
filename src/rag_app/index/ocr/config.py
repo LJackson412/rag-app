@@ -32,9 +32,12 @@ class IndexConfig(BaseModel):
         ),
     ]
     embedding_model: Annotated[
-        Literal["text-embedding-3-small", "text-embedding-3-large"],
+        Literal[
+            "openai/text-embedding-3-small",
+            "openai/text-embedding-3-large",
+        ],
         Field(
-            default="text-embedding-3-large",
+            default="openai/text-embedding-3-large",
             description=(
                 "Embedding model used for indexing "
                 "Use 'text-embedding-3-large' when you need maximum retrieval quality."
@@ -57,9 +60,9 @@ class IndexConfig(BaseModel):
     # ------------------------------------------------------------------------
 
     gen_metadata_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
+        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(
-            default="gpt-4.1",
+            default="openai/gpt-4.1",
             description=(
                 "Model for metadata enrichment across text, image and table segments "
                 "Generates metadata for better retrieval quality "
@@ -87,6 +90,16 @@ class IndexConfig(BaseModel):
         description="Sepearatos for recursive text splitting",
         json_schema_extra={"langgraph_nodes": ["extract_text"]},
     )
+    vstore: Annotated[
+        Literal["chroma"],
+        Field(
+            default="chroma",
+            description="Vector store provider",
+            json_schema_extra={
+                "langgraph_nodes": ["save"],
+            },
+        ),
+    ]
     splitter_chunk_size: int = Field(
         default=900,
         description="Chunk Size for recursive text splitting",

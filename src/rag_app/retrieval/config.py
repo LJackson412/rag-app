@@ -40,9 +40,9 @@ class RetrievalConfig(BaseModel):
         ),
     ]
     generate_questions_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
+        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(
-            default="gpt-4.1",
+            default="openai/gpt-4.1",
             description=(
                 "Model for generating semantic question variants. "
                 "Use 'gpt-4.1' for complex queries; 'gpt-4.1-mini' for lower cost."
@@ -80,9 +80,12 @@ class RetrievalConfig(BaseModel):
     ]
 
     embedding_model: Annotated[
-        Literal["text-embedding-3-small", "text-embedding-3-large"],
+        Literal[
+            "openai/text-embedding-3-small",
+            "openai/text-embedding-3-large",
+        ],
         Field(
-            default="text-embedding-3-large",
+            default="openai/text-embedding-3-large",
             description=(
                 "Embedding model used for indexing "
                 "Use 'text-embedding-3-large' when you need maximum retrieval quality"
@@ -112,9 +115,9 @@ class RetrievalConfig(BaseModel):
         json_schema_extra={"langgraph_nodes": ["retrieve"]},
     )
     compress_docs_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
+        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(
-            default="gpt-4.1",
+            default="openai/gpt-4.1",
             description=(
                 "2-Stage of Retrieval: Compression Model for classifying document chunk relevance. "
                 "Use 'gpt-4.1' for subtle relevance; 'gpt-4.1-mini' for unified mini usage."
@@ -134,15 +137,25 @@ class RetrievalConfig(BaseModel):
     )
 
     generate_answer_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
+        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(
-            default="gpt-4.1",
+            default="openai/gpt-4.1",
             description=(
                 "Model for generating final grounded answers. "
                 "Use 'gpt-4o' as an alternative; mini variants for cost/latency optimizations."
             ),
             json_schema_extra={
                 "langgraph_nodes": ["generate_answer"],
+            },
+        ),
+    ]
+    vstore: Annotated[
+        Literal["chroma"],
+        Field(
+            default="chroma",
+            description="Vector store provider",
+            json_schema_extra={
+                "langgraph_nodes": ["retrieve"],
             },
         ),
     ]

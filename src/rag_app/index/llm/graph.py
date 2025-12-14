@@ -7,7 +7,6 @@ from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
-from rag_app.factory.factory import build_chat_model, build_vstore
 from rag_app.index.llm.config import IndexConfig
 from rag_app.index.llm.loader import load_page_imgs_from_pdf, load_pdf_metadata
 from rag_app.index.llm.mapping import map_to_docs
@@ -26,7 +25,11 @@ from rag_app.index.llm.state import (
 )
 from rag_app.index.schema import LLMException
 from rag_app.llm_enrichment.llm_enrichment import gen_llm_structured_data_from_imgs
-from rag_app.utils.utils import make_chunk_id
+from rag_app.utils.utils import (
+    extract_provider_and_model,
+    get_provider_factory_from_config,
+    make_chunk_id,
+)
 
 
 async def extract_metadata(
@@ -58,8 +61,11 @@ async def llm_extract(
     state: OverallIndexState, config: RunnableConfig
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
+    
+    provider_factory = get_provider_factory_from_config(config)
 
-    extract_model = index_config.extract_model
+
+    extract_provider, model_name = extract_provider_and_model(index_config.extract_model)
     extract_prompt = index_config.extract_data_prompt
     doc_id = index_config.doc_id
     collection_id = index_config.collection_id
@@ -70,7 +76,9 @@ async def llm_extract(
 
     llm_responses = await gen_llm_structured_data_from_imgs(
         img_urls,
-        build_chat_model(extract_model),
+        provider_factory.build_chat_model(
+            provider=extract_provider, model_name=model_name
+        ),
         extract_prompt,
         LLMSegments,
     )
@@ -221,11 +229,24 @@ async def save(
 ) -> dict[str, list[Document]]:
 
     index_config = IndexConfig.from_runnable_config(config)
+    
+    provider_factory = get_provider_factory_from_config(config)
 
-    collection_id = index_config.collection_id
-    embedding_model = index_config.embedding_model
+    collection_name = index_config.collection_id
+    embedding_provider, model_name = extract_provider_and_model(
+        index_config.embedding_model
+    )
+    vstore_provider = index_config.vstore
 
-    vstore = await asyncio.to_thread(build_vstore, embedding_model, collection_id)
+    embedding_model = provider_factory.build_embeddings(
+        provider=embedding_provider, model_name=model_name
+    )
+    vstore = await asyncio.to_thread(
+        provider_factory.build_vstore,
+        embedding_model,
+        provider=vstore_provider,
+        collection_name=collection_name,
+    )
 
     segments = (
         state.text_segments

@@ -32,9 +32,12 @@ class IndexConfig(BaseModel):
         ),
     ]
     embedding_model: Annotated[
-        Literal["text-embedding-3-small", "text-embedding-3-large"],
+        Literal[
+            "openai/text-embedding-3-small",
+            "openai/text-embedding-3-large",
+        ],
         Field(
-            default="text-embedding-3-large",
+            default="openai/text-embedding-3-large",
             description=(
                 "Embedding model used for indexing "
                 "Use 'text-embedding-3-large' when you need maximum retrieval quality."
@@ -46,15 +49,25 @@ class IndexConfig(BaseModel):
         ),
     ]
     extract_model: Annotated[
-        Literal["gpt-4.1", "gpt-4.1-mini"],
+        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(
-            default="gpt-4.1",
+            default="openai/gpt-4.1",
             description=(
                 "Multimodal model for PDF extraction"
                 "Extract and splits the page content and metadata from each PDF page as Image"
             ),
             json_schema_extra={
                 "langgraph_nodes": ["extract"],
+            },
+        ),
+    ]
+    vstore: Annotated[
+        Literal["chroma"],
+        Field(
+            default="chroma",
+            description="Vector store provider",
+            json_schema_extra={
+                "langgraph_nodes": ["save"],
             },
         ),
     ]

@@ -1,33 +1,29 @@
-from typing import cast
+# if __name__ == "__main__":
 
-from langchain_core.runnables import RunnableConfig
+#     config = RunnableConfig(
+#         configurable={"doc_id": "Cancom_240514", "collection_id": "Cancom_OCR"}
+#     )
+#     index_config = IndexConfig.from_runnable_config(config)
+#     provider_factory = get_provider_factory_from_config(config)
+    
+#     embedding_provider, model_name = extract_provider_and_model(
+#         index_config.embedding_model
+#     )
+#     embedding_model = provider_factory.build_embeddings(
+#         provider=embedding_provider, model_name=model_name
+#     )
+    
+#     vstore = cast(
+#         Chroma, provider_factory.build_vstore(embedding_model, config.vstore, config.collection_id)
+#     )
+#     vstore.delete_collection()
 
-from rag_app.factory.factory import build_vstore
-from rag_app.retrieval.config import RetrievalConfig
-from rag_app.utils.utils import pretty_print_docs
+#     filter = cast(str, {"doc_id": index_config.doc_id})
+#     retriever = vstore.as_retriever(
+#         search_type="similarity",
+#         search_kwargs={"k": k, "filter": filter},
+#     )
 
-if __name__ == "__main__":
+#     docs = retriever.invoke("Query")
 
-    config = RunnableConfig(
-        configurable={"doc_id": "Cancom_240514", "collection_id": "Cancom_OCR"}
-    )
-
-    # config = RunnableConfig(
-    #     configurable={"doc_id": "Cancom_240514", "collection_id": "Cancom_LLM"}
-    # )
-
-    index_config = RetrievalConfig.from_runnable_config(config)
-
-    vstore = build_vstore(index_config.embedding_model, index_config.collection_id)
-
-    k = vstore._collection.count()
-
-    filter = cast(str, {"doc_id": index_config.doc_id})
-    retriever = vstore.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": k, "filter": filter},
-    )
-
-    docs = retriever.invoke("Query")
-
-    pretty_print_docs(docs)
+#     pretty_print_docs(docs)

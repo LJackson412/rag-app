@@ -2,6 +2,9 @@ import json
 from collections.abc import Iterable, Sequence
 
 from langchain_core.documents import Document
+from langchain_core.runnables import RunnableConfig, ensure_config
+
+from rag_app.providers.composition import ProviderFactory, get_provider_factory
 
 DocOrScoredDoc = Document | tuple[Document, float]
 
@@ -79,3 +82,15 @@ def parse_chunk_id(chunk_id: str) -> dict[str, str | int]:
         "doc_id": doc_id,
         "chunk_index": int(idx_str),
     }
+
+def extract_provider_and_model(name: str) -> tuple[str, str]:
+    if "/" in name:
+        provider, model = name.split("/", 1)
+        return provider, model
+    else:
+        raise ValueError("No provider prefix found")
+
+def get_provider_factory_from_config(config: RunnableConfig) -> ProviderFactory:
+    ensured = ensure_config(config)
+    configurable = ensured.get("configurable", {}) or {}
+    return get_provider_factory(configurable.get("provider_factory"))

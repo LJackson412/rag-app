@@ -32,6 +32,7 @@ dependencies = [
   "pymupdf",
   "unstructured[pdf]",
   "unstructured[docx]",
+  "msoffcrypto-tool",
 
   "python-dotenv>=1.0.1"
 ]
