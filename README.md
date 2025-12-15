@@ -1,9 +1,9 @@
 # RAG App
 
-A modular **Retrieval-Augmented Generation (RAG)** stack with two indexing pipelines (OCR-based and LLM extraction) and a two-stage retrieval process with LLM compression. The setup is designed for fast experimentation and uses **LangGraph/LangChain** and a **Chroma** vector store. All model and storage providers are interchangeable.
+A modular **Retrieval-Augmented Generation (RAG)** stack with an OCR-based indexing pipeline and a two-stage retrieval process with LLM compression. The setup is designed for fast experimentation and uses **LangGraph/LangChain** and a **Chroma** vector store. All model and storage providers are interchangeable.
 
 ## Quick Overview
-- **Two indexers**: OCR extraction with metadata enrichment and LLM-based extraction/splitting.
+- **OCR indexer**: OCR extraction with metadata enrichment.
 - **Retrieval**: 2-stage retriever with LLM compression for focused answers.
 - **LangGraph Dev/Studio**: Run graphs locally via `langgraph dev` and control them visually.
 - **Sample data**: CANCOM documents are already indexed in `.chroma_directory` and ready to use.
@@ -20,18 +20,9 @@ Extracts text from PDF pages (PNG images), enriches it with LLM metadata, and pe
 **Studio View**
 ![Studio: OCR-Indexer](/docs/ocr_indexer_studio.png)
 
-#### LLM Indexer
-Uses an LLM for text extraction and chunking, adds metadata, and writes to Chroma.
-
-**Diagram**
-![UML: LLM-Indexer](/docs/index_llm_uml.png)
-
-**Studio View**
-![Studio: LLM-Indexer](/docs/llm_indexer_studio.png)
-
 ### Retrieval Process (2-Stage with Compression)
 - Initial ranking via vector similarity, followed by LLM compression on relevant passages.
-- Supports multilingual queries and can target both OCR and LLM indexes.
+- Supports multilingual queries and targets the OCR index.
 
 **Diagram**
 ![UML: Retriever](/docs/retriever_uml.png)
@@ -54,7 +45,7 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 ```
 
 ## Running Graphs in LangGraph Studio
-1. **Choose a graph:** Switch between `index_graph` (OCR/LLM index) and `retrieval_graph` in the UI.
+1. **Choose a graph:** Switch between `index_graph` (OCR index) and `retrieval_graph` in the UI.
 2. **Set parameters:** Adjust `collection_id`, `doc_id`, and optionally `chunking_config` to your data.
 3. **Start run:** Execute the desired node in the Studio view or trigger the entire graph.
 
@@ -66,17 +57,14 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 ./data/Test/Test.png
 
 **Indexers** – existing collections (already stored in `.chroma_directory`):
-- **LLM Indexer** `collection_id: Cancom_LLM`
-  - `doc_id: Cancom_240514`, `path: ./data/Cancom/240514_CANCOM_Zwischenmitteilung.pdf`
-  - `doc_id: Cancom_20241112`, `path: ./data/Cancom/20241112_CANCOM_Zwischenmitteilung.pdf`
 - **OCR Indexer** `collection_id: Cancom_OCR`
   - `doc_id: Cancom_240514`, `path: ./data/Cancom/240514_CANCOM_Zwischenmitteilung.pdf`
   - `doc_id: Cancom_20241112`, `path: ./data/Cancom/20241112_CANCOM_Zwischenmitteilung.pdf`
 
 **Retrieval Queries**
-- Query entire collection: `collection_id = Cancom_LLM` or `Cancom_OCR`, `doc_id = None`
+- Query entire collection: `collection_id = Cancom_OCR`, `doc_id = None`
   - Example question: "How does CANCOM describe the impact of acquiring the KBC / CANCOM Austria Group on revenue, gross profit, and EBITDA in the Q1 2024 and Q3 2024 interim reports?"
-- Query a single document: `collection_id = Cancom_LLM/OCR`, `doc_id = Cancom_240514`
+- Query a single document: `collection_id = Cancom_OCR`, `doc_id = Cancom_240514`
   - Example questions:
     - "Where is Cancom SE located and what phone number can they be reached at?" (evidence page 13)
     - "What is the percentage and absolute difference in inventories between 12/31/2023 and 03/31/2024?" (evidence page 18)
