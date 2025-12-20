@@ -1,0 +1,3 @@
+"""
+GenAIHub embedding models
+"""
