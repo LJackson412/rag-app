@@ -4,6 +4,7 @@ from typing import Annotated, Literal, Type, TypeVar
 
 from langchain_core.runnables import RunnableConfig, ensure_config
 from pydantic import BaseModel, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from rag_core.retrieval.prompts import (
     COMPRESS_DOCS_PROMPT,
@@ -168,19 +169,11 @@ class RetrievalConfig(BaseModel):
             "langgraph_type": "prompt",
         },
     )
-    generate_answer_schema: Annotated[
-        Type[BaseModel],
-        Field(
-            default=LLMAnswer,
-            description=(
-                "Pydantic schema used to structure the final answer output. "
-                "Defaults to LLMAnswer when no custom schema is provided."
-            ),
-            json_schema_extra={
-                "langgraph_nodes": ["generate_answer"],
-            },
-        ),
-    ]
+    generate_answer_schema: SkipJsonSchema[Type[BaseModel]] = Field(
+        default=LLMAnswer,
+        description="Runtime-only (not part of JSON schema/config UI).",
+        json_schema_extra={"langgraph_nodes": ["generate_answer"]},
+    )
 
     @classmethod
     def from_runnable_config(cls: type[T], config: RunnableConfig | None = None) -> T:
