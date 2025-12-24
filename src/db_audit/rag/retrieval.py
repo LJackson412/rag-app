@@ -19,13 +19,14 @@ from rag_core.retrieval.state import InputRetrievalState, OutputRetrievalState
 async def retrieve_docs(
     collection_id: str,
     queries: list[str],
+    generate_answer_schema: type[BaseModel],
     generate_questions_prompt: str = GENERATE_QUESTIONS_PROMPT,
     compress_docs_prompt: str = COMPRESS_DOCS_PROMPT,
     generate_answer_prompt: str = GENERATE_ANSWER_PROMPT,
     number_of_llm_generated_questions: int = 3,
     include_original_question: bool = True,
     number_of_docs_to_retrieve: int = 10,
-    generate_answer_schema: type[BaseModel] | None = None,
+    
 ) -> list[OutputRetrievalState]:
     """
     - Dursuchen einer Collection nach relevanten Dokumenten basierend auf mehreren Abfragen
@@ -54,24 +55,9 @@ async def retrieve_docs(
         retrieval_configs.append(retrieval_config)
         retrieval_states.append(retrieval_state)
     
-    return await retrieval_graph.abatch(
+    results = await retrieval_graph.abatch(
         inputs=retrieval_states,
         config=retrieval_configs
     )
-
-
-async def main() -> None:
-    TEST_COLLECTION_ID = "Test"
-    QUESTIONS = [
-        "What is the main topic of the document?",
-        "Summarize the key points discussed in the document."
-    ]
-
-    res = await retrieve_docs(TEST_COLLECTION_ID, QUESTIONS)
-
-    print("Count Docs:", len(res))
-    print("Type erstes Element:", type(res[0]))
-    print("Erstes Element:", res[0])
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    
+    return [OutputRetrievalState.model_validate(r) for r in results]

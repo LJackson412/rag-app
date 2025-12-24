@@ -3,7 +3,8 @@
   "dependencies": ["."],
   "graphs": {
     "indexer": "./src/rag_core/index/graph.py:graph",
-    "retriever": "./src/rag_core/retrieval/graph.py:graph"
+    "retriever": "./src/rag_core/retrieval/graph.py:graph",
+    "audit": "./src/db_audit/audits/graph.py:graph"
   },
   "env": ".env"
 }

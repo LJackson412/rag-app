@@ -15,7 +15,6 @@ async def index_files(
     paths: list[str], 
     doc_ids: list[str],
     mode: Literal["none", "all", "imgs", "tables", "texts"] = "none",
-
 ) -> list[OutputIndexState]:
     """
     - Input sind Dokumente einer Collection
@@ -41,10 +40,12 @@ async def index_files(
         index_states.append(index_state)
         
     
-    return await index_graph.abatch(
+    results = await index_graph.abatch(
         inputs=index_states,
         config=index_configs
     )
+    
+    return [OutputIndexState.model_validate(r) for r in results]
 
 
 async def main() -> None:
