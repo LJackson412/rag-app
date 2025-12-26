@@ -4,12 +4,14 @@
 
 """
 
+import asyncio
 from typing import Any, cast
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
 from db_audit.audits.config import AuditConfig
+from db_audit.audits.report import generate_audit_report
 from db_audit.audits.schema import AuditResult, LLMAuditResult
 from db_audit.audits.state import InputAuditState, OutputAuditState, OverallAuditState
 from db_audit.rag.index import index_files
@@ -28,7 +30,7 @@ async def index(
             collection_id=state.workitem_element_id,
             paths=state.paths,
             doc_ids=state.doc_ids,
-            mode=state.mode
+            mode=audit_config.mode
         )
         return {"index_states": index_states}
     return {"index_states": []}
@@ -54,10 +56,13 @@ async def audit(
 
         audit_res = AuditResult.from_llm(llm_audit_res)
         audit_res.attach_documents(rs.filtered_docs)
-        
+
         rs.llm_answer = audit_res
-    
-    return {"retrieval_states": retrieval_states}
+
+    state_for_report = state.model_copy(update={"retrieval_states": retrieval_states})
+    report_html = asyncio.to_thread(generate_audit_report, state_for_report)
+
+    return {"retrieval_states": retrieval_states, "audit_report_html": report_html}
 
 
 

@@ -3,7 +3,7 @@ from typing import Annotated
 from langchain_core.documents import Document
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SerializeAsAny
 
 MessagesState = Annotated[list[AnyMessage], add_messages]
 
@@ -45,7 +45,7 @@ class OutputRetrievalState(BaseModel):
         ),
     ]
     llm_answer: Annotated[
-        BaseModel | None,
+        SerializeAsAny[BaseModel] | None,
         Field(
             default=None,
             description=(

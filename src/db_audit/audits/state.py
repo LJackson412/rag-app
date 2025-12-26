@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
@@ -24,15 +24,7 @@ class InputAuditState(BaseModel):
             },
         ),
     ]
-    mode: Annotated[
-        Literal["none", "all"],
-        Field(
-            default="all",
-            description=(
-                ""
-            ),
-        ),
-    ]
+
     paths: Annotated[
         list[str],
         Field(
@@ -69,6 +61,13 @@ class OutputAuditState(BaseModel):
         Field(
             default_factory=list,
             description=("requirements for audits"),
+        ),
+    ]
+    audit_report_html: Annotated[
+        str,
+        Field(
+            default="",
+            description=("Rendered HTML report for the audit run"),
         ),
     ]
 

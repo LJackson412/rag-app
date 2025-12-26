@@ -28,8 +28,7 @@ async def index_files(
             configurable={
                 "collection_id": collection_id,
                 "doc_id": doc_id,
-                "mode" : mode,
-                # "provider_factory" : None,
+                "mode" : mode
             },
         )
         index_state = InputIndexState(
