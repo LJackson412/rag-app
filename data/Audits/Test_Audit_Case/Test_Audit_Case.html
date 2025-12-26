@@ -1,0 +1,235 @@
+
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Audit Report – Test_Audit_Case</title>
+  <style>
+    :root {
+      --bg: #0b1221;
+      --panel: #0f172a;
+      --card: #111827;
+      --muted: #9ca3af;
+      --text: #e5e7eb;
+      --accent: #2563eb;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, rgba(37,99,235,0.15), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(16,185,129,0.12), transparent 25%),
+                  var(--bg);
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(17,24,39,0.85));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 16px;
+    }
+    .title-block h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: -0.01em;
+    }
+    .muted { color: var(--muted); margin-top: 4px; }
+    .muted.small { font-size: 13px; margin-top: 0; }
+    .badge {
+      border: 1px solid;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+    h2 { margin: 4px 0 10px; font-size: 20px; }
+    .overall-statement { color: #cbd5e1; margin: 0 0 12px; line-height: 1.5; overflow-wrap: anywhere; }
+    .sub-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .sub-card {
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.02);
+      min-width: 0;
+    }
+    .sub-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .sub-title { font-weight: 700; overflow-wrap: anywhere; }
+    .sub-statement { color: #d1d5db; margin: 8px 0 12px; line-height: 1.5; overflow-wrap: anywhere; }
+    .evidence-grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+
+    .evidence-card {
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(37, 99, 235, 0.05);
+      min-width: 0;
+      overflow: hidden;
+    }
+    .evidence-top {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 8px;
+      min-width: 0;
+    }
+    .evidence-title { font-weight: 700; }
+
+    /* Titel: nur bis zu einer bestimmten Länge anzeigen (optisch gekürzt) */
+    .evidence-doc-title {
+      color: #e5e7eb;
+      font-size: 13px;
+      line-height: 1.35;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2; /* max. 2 Zeilen */
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      min-width: 0;
+    }
+
+    details.evidence-details {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 8px;
+    }
+    .evidence-summary {
+      cursor: pointer;
+      user-select: none;
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 13px;
+      outline: none;
+      list-style: none;
+    }
+    .evidence-summary::-webkit-details-marker { display: none; }
+    .evidence-summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 8px;
+      transform: translateY(-1px);
+      color: var(--muted);
+    }
+    details[open] .evidence-summary::before {
+      content: "▾";
+    }
+
+    .evidence-summary-meta {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .evidence-expanded {
+      margin-top: 10px;
+      min-width: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.15);
+      padding: 8px;
+    }
+    .table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+    }
+    .table-wrap th,
+    .table-wrap td {
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 8px;
+      vertical-align: top;
+      font-size: 13px;
+      color: #e5e7eb;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .table-wrap th {
+      background: rgba(255,255,255,0.04);
+      font-weight: 700;
+    }
+
+    .image-wrap {
+      margin: 0;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.15);
+    }
+    .evidence-image {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .text-block {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px;
+      max-height: 320px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #e5e7eb;
+    }
+
+    .no-evidence { color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="title-block">
+        <h1>Audit Report</h1>
+        <div class="muted">Workitem: Test_Audit_Case</div>
+        <div class="muted">Generiert am 2025-12-26 19:44 UTC</div>
+      </div>
+      <div class="badge" style="border-color: var(--accent); color: var(--accent); background: rgba(37,99,235,0.1);">4 Anforderungen</div>
+    </header>
+    <section class='card'><div class='card-header'><div><div class='eyebrow'>Anforderung 1</div><h2>Zugriffsberechtigungen von Benutzern unter Verantwortung des Unternehmens (interne und externe Mitarbeiter) werden mindestens jährlich überprüft, um diese zeitnah auf Änderungen im Beschäftigungsverhältnis (Kündigung, Versetzung, längerer Abwesenheit/Sabbatical/Elternzeit) anzupassen.</h2></div><span class='badge' style='color:#F59E0B; background:#FFFBEB; border-color:#F59E0B;'>teilweise erfuellt</span></div><p class='overall-statement'>Die Anforderung ist teilweise erfüllt: Die regelmäßige (halbjährliche) Überprüfung der Zugriffsberechtigungen für interne und externe Mitarbeitende ist klar belegt und übererfüllt die Mindestanforderung. Anpassungen bei Kündigung und Versetzung sind ebenfalls geregelt. Für längere Abwesenheiten (z.B. Elternzeit) existiert jedoch noch keine vollautomatisierte Lösung, sondern nur eine manuelle Regelung mit dokumentierter Lücke und geplantem Verbesserungsbedarf.</p><div class='sub-grid'><div class='sub-card'><div class='sub-header'><div class='sub-title'>Zugriffsberechtigungen von Benutzern unter Verantwortung des Unternehmens (interne und externe Mitarbeiter) werden mindestens jährlich überprüft.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Die Dokumentation belegt, dass für alle internen und externen Mitarbeitenden im Geltungsbereich des Fachbereichs Digital Sales (FDS) halbjährliche Review-Kampagnen zur Überprüfung der Zugriffsberechtigungen durchgeführt werden (April &amp; Oktober). Damit ist die jährliche Überprüfungspflicht übererfüllt.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Zweck und Geltungsbereich der Zugriffsberechtigungsprüfung'>Zweck und Geltungsbereich der Zugriffsberechtigungsprüfung</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Diese Maßnahme beschreibt die regelmäßige Überprüfung, Freigabe und Entziehung von Zugriffsberechtigungen für interne und externe Mitarbeitende in den Anwendungen CRM-SalesPro, DataLake-X, SFTP-Marketing und SAP BW durch FDS. Sie gilt für alle FDS-Teams, einschließlich befristet Beschäftigter, Werkstudierender und Lieferantenpersonal mit FDS-Rollen. Die Umsetzung erfolgt über die Identity-Governance-Plattform Keystone und das Service-Management-System ServiceDeskOne, mit Schnittstellen zu HR (PeopleCore) und Vendor-Management (ThirdPartyHub).</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Risikobeschreibung, Ziel der Maßnahme und Rollenverantwortlichkeiten bei Berechtigungsmanagement'>Risikobeschreibung, Ziel der Maßnahme und Rollenverantwortlichkeiten bei Berechtigungsmanagement</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt das Risiko veralteter Berechtigungen, die zu unautorisiertem Zugriff auf Kundendaten und Finanzkennzahlen sowie zu regulatorischen Meldepflichten führen können. Das Zielbild sieht vor, dass FDS durch regelmäßige Reviews und anlassbezogene Prüfungen sicherstellt, dass Berechtigungen aktuell, zweckgebunden und minimal sind. Zudem werden die relevanten Rollen und deren Verantwortlichkeiten im IGP und Delegationsregister dokumentiert.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP'>Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>FDS führt halbjährlich kampagnenbasierte Reviews in IGP durch, bei denen AV und TL die Zweckbindung, Rollen-Minimalität und Projektlaufzeiten für jede betroffene Person prüfen. Entscheidungen werden direkt in IGP dokumentiert und notwendige Änderungen automatisiert als Tickets in ServiceDeskOne erstellt. Die Frist pro Kampagne beträgt 15 Arbeitstage mit automatischen Erinnerungen und Eskalation ab Tag 12; 5 % der bestätigten Entscheidungen werden stichprobenartig auf Qualität geprüft.</pre></div></details></div></div></div><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die Überprüfung umfasst Anpassungen bei Änderungen im Beschäftigungsverhältnis (Kündigung, Versetzung, längere Abwesenheit/Sabbatical/Elternzeit).</div><span class='badge' style='color:#F59E0B; background:#FFFBEB; border-color:#F59E0B;'>teilweise erfuellt</span></div><p class='sub-statement'>Für Kündigung (Leaver) und Versetzung (Mover) sind anlassbezogene Prüfungen und Sofortsperren implementiert. Für längere Abwesenheiten (z.B. Elternzeit) gibt es eine manuelle Regelung durch Teamleitung, jedoch keine automatisierte temporäre Entziehung. Eine technische Lücke bei der automatischen Suspendierung ist dokumentiert und Verbesserungsmaßnahmen sind geplant, aber noch nicht umgesetzt.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales'>Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Die Rollenbeschreibung legt fest, dass nur autorisierte AV/TL der FDS-Leitung Reviews durchführen dürfen, mit namentlich benannten und zeitlich befristeten Vertretungen. Die Schulung &#x27;IGP Reviewer Basics&#x27; ist verpflichtend. Im Rahmen der Abteilungsmaßnahme zur regelmäßigen Berechtigungsüberprüfung erhält IGP wöchentlich Stammdaten aus PeopleCore (Mitarbeiterstatus, Organisationseinheit, TL-Zuweisung). Bei Leaver erfolgt eine automatische Sofortsperre, bei Mover eine Einzelprüfung durch den zuständigen TL. Lieferantenstatus wird monatlich aus ThirdPartyHub importiert.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP'>Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>FDS führt halbjährlich kampagnenbasierte Reviews in IGP durch, bei denen AV und TL die Zweckbindung, Rollen-Minimalität und Projektlaufzeiten für jede betroffene Person prüfen. Entscheidungen werden direkt in IGP dokumentiert und notwendige Änderungen automatisiert als Tickets in ServiceDeskOne erstellt. Die Frist pro Kampagne beträgt 15 Arbeitstage mit automatischen Erinnerungen und Eskalation ab Tag 12; 5 % der bestätigten Entscheidungen werden stichprobenartig auf Qualität geprüft.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)'>Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt enthält KPIs der letzten Kampagne (Oktober 2024) zur regelmäßigen Berechtigungsüberprüfung im Fachbereich Digital Sales, einen Review-Auszug der Kampagne „FDS-Q4-2024“ mit Hinweisen auf Prozesslücken (z.B. Langzeitabwesenheit, ThirdPartyHub-Rhythmus), Visualisierungen und Ticketnummern sowie einen Maßnahmenplan zur Verbesserung, darunter die Erhöhung der TPH-Frequenz, Integration des Attributs „Langzeitabwesenheit“ in PeopleCore, verbindliche Admin-Reviews und Policy-Updates.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer'>Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Benutzer</td><td>Typ</td><td>Team</td><td>System/Rolle</td><td>Entscheidung</td><td>Begriindung (Kurz)</td><td>IGP- Zeitstempel</td><td>Ticket- ID</td></tr><tr><td>Anna Schmidt</td><td>Intern</td><td>Performance Marketing</td><td>DataLake-X / DLX_MARKETING_ANALYST</td><td>Bestatigt</td><td>Aktives Projekt ,Attribution 2.0"</td><td>2024-10-07 10:14</td><td>SDO- 124558</td></tr><tr><td>Ben Miller</td><td>Extern (Lieferant)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_EDIT</td><td>Entzogen</td><td>sow abgelaufen 2024-09-15</td><td>2024-10-08 15:22</td><td>SDO- 124733</td></tr><tr><td>Ch. Nguyen</td><td>Intern</td><td>Data Science</td><td>SFTP-Marketing / SFTP_WRITE</td><td>Andern</td><td>Reduzierung auf READ (Rollentausch)</td><td>2024-10-09 09:03</td><td>SDO- 124840</td></tr><tr><td>D. Keller</td><td>Intern (Elternzeit)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_READ</td><td>Bestatigt</td><td>Ersatz Ubernimmt keine Rolle</td><td>2024-10-10 13:47</td><td/></tr><tr><td>E. Rossi</td><td>Extern (Lieferant)</td><td>Data Science</td><td>DataLake-X / DLX_CONTRACTOR</td><td>Bestatigt</td><td>sow Verlangerung in Prifung</td><td>2024-10-11 08:26</td><td/></tr></table></div></div></details></div></div></div></div></section><section class='card'><div class='card-header'><div><div class='eyebrow'>Anforderung 2</div><h2>Die Überprüfung erfolgt durch hierzu autorisierte Personen aus den Unternehmensbereichen des Unternehmens, die aufgrund ihres Wissens über die Zuständigkeiten die Angemessenheit der vergebenen Berechtigungen überprüfen können.</h2></div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='overall-statement'>Alle Teilanforderungen sind durch die Dokumentation klar und nachvollziehbar erfüllt: Die Überprüfung erfolgt durch autorisierte, fachlich geeignete Personen, die über die notwendigen Kenntnisse verfügen und die Angemessenheit der Berechtigungen beurteilen können.</p><div class='sub-grid'><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die Überprüfung erfolgt durch hierzu autorisierte Personen aus den Unternehmensbereichen des Unternehmens.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Es ist klar geregelt, dass nur von der FDS-Leitung autorisierte AV/TL Reviews durchführen dürfen. Vertretungen sind namentlich benannt und zeitlich befristet. Die Rollen und Verantwortlichkeiten sind dokumentiert und im Delegationsregister festgehalten.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales'>Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Die Rollenbeschreibung legt fest, dass nur autorisierte AV/TL der FDS-Leitung Reviews durchführen dürfen, mit namentlich benannten und zeitlich befristeten Vertretungen. Die Schulung &#x27;IGP Reviewer Basics&#x27; ist verpflichtend. Im Rahmen der Abteilungsmaßnahme zur regelmäßigen Berechtigungsüberprüfung erhält IGP wöchentlich Stammdaten aus PeopleCore (Mitarbeiterstatus, Organisationseinheit, TL-Zuweisung). Bei Leaver erfolgt eine automatische Sofortsperre, bei Mover eine Einzelprüfung durch den zuständigen TL. Lieferantenstatus wird monatlich aus ThirdPartyHub importiert.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Risikobeschreibung, Ziel der Maßnahme und Rollenverantwortlichkeiten bei Berechtigungsmanagement'>Risikobeschreibung, Ziel der Maßnahme und Rollenverantwortlichkeiten bei Berechtigungsmanagement</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt das Risiko veralteter Berechtigungen, die zu unautorisiertem Zugriff auf Kundendaten und Finanzkennzahlen sowie zu regulatorischen Meldepflichten führen können. Das Zielbild sieht vor, dass FDS durch regelmäßige Reviews und anlassbezogene Prüfungen sicherstellt, dass Berechtigungen aktuell, zweckgebunden und minimal sind. Zudem werden die relevanten Rollen und deren Verantwortlichkeiten im IGP und Delegationsregister dokumentiert.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='RACI-Matrix für Kampagnenmanagement und Änderungsprozesse'>RACI-Matrix für Kampagnenmanagement und Änderungsprozesse</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 4, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Aktivitat</td><td>R</td><td>A</td><td>Cc</td><td>}</td></tr><tr><td>Kampagnen konfigurieren</td><td>FDS-GRC</td><td>AV</td><td>IT-IGP</td><td>FDS-Leitung</td></tr><tr><td>Review durchfiihren</td><td>TL</td><td>AV</td><td>GRC</td><td>HR</td></tr><tr><td>Anderungen umsetzen</td><td>ServiceDesk</td><td>AV</td><td>TL</td><td>Betroffene/r</td></tr></table></div></div></details></div></div></div><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die Überprüfenden verfügen über Wissen über die Zuständigkeiten.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Die AV/TL sind fachlich zuständig und prüfen anhand des Aufgabenprofils. Die Schulung &#x27;IGP Reviewer Basics&#x27; ist verpflichtend, was sicherstellt, dass die Prüfer über das notwendige Wissen verfügen.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales'>Prozessbeschreibung der Berechtigungsüberprüfung im Fachbereich Digital Sales</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Die Rollenbeschreibung legt fest, dass nur autorisierte AV/TL der FDS-Leitung Reviews durchführen dürfen, mit namentlich benannten und zeitlich befristeten Vertretungen. Die Schulung &#x27;IGP Reviewer Basics&#x27; ist verpflichtend. Im Rahmen der Abteilungsmaßnahme zur regelmäßigen Berechtigungsüberprüfung erhält IGP wöchentlich Stammdaten aus PeopleCore (Mitarbeiterstatus, Organisationseinheit, TL-Zuweisung). Bei Leaver erfolgt eine automatische Sofortsperre, bei Mover eine Einzelprüfung durch den zuständigen TL. Lieferantenstatus wird monatlich aus ThirdPartyHub importiert.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Rollen und Verantwortungen: Verantwortliche (AV)'>Rollen und Verantwortungen: Verantwortliche (AV)</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Rolle</td><td>Verantwortung</td></tr><tr><td>verantwortliche (AV)</td><td>Kampagnen pro Anwendung; finale Entscheidung Uber Entzug/Sperre; fachliche Eignungspruifung anhand Aufgabenprofil.</td></tr></table></div></div></details></div></div></div><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die Überprüfenden können die Angemessenheit der vergebenen Berechtigungen überprüfen.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Die Überprüfenden (AV/TL) prüfen explizit die Zweckbindung, Rollen-Minimalität und Projektlaufzeiten. Es gibt eine fachliche Eignungsprüfung anhand des Aufgabenprofils. Entscheidungen werden dokumentiert und stichprobenartig überprüft.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP'>Regelmäßige Review-Kampagnen, Fristen und Qualitätssicherung im IGP</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>FDS führt halbjährlich kampagnenbasierte Reviews in IGP durch, bei denen AV und TL die Zweckbindung, Rollen-Minimalität und Projektlaufzeiten für jede betroffene Person prüfen. Entscheidungen werden direkt in IGP dokumentiert und notwendige Änderungen automatisiert als Tickets in ServiceDeskOne erstellt. Die Frist pro Kampagne beträgt 15 Arbeitstage mit automatischen Erinnerungen und Eskalation ab Tag 12; 5 % der bestätigten Entscheidungen werden stichprobenartig auf Qualität geprüft.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Rollen und Verantwortungen: Verantwortliche (AV)'>Rollen und Verantwortungen: Verantwortliche (AV)</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 1, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Rolle</td><td>Verantwortung</td></tr><tr><td>verantwortliche (AV)</td><td>Kampagnen pro Anwendung; finale Entscheidung Uber Entzug/Sperre; fachliche Eignungspruifung anhand Aufgabenprofil.</td></tr></table></div></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Anhang: RACI-Matrix und Prüfpfad-Checkliste zur Berechtigungsüberprüfung'>Anhang: RACI-Matrix und Prüfpfad-Checkliste zur Berechtigungsüberprüfung</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 4, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Der Anhang enthält einen Auszug einer RACI-Matrix sowie eine interne Prüfpfad-Checkliste zur regelmäßigen Berechtigungsüberprüfung im Fachbereich Digital Sales. Die Checkliste umfasst Punkte wie IGP-Kampagnen-Export, Stichproben-Abgleich von Aufgabenprofilen und Rollen, Ticket-Verknüpfungen, SOW-Gültigkeit bei Externen, und manuelle Suspendierung bei Langzeitabwesenheiten. Dokumentversion v1.3 mit Klarstellung des Geltungsbereichs, KPI-Update und Ergänzung zur Lückenanalyse von Admin-Rollen; nächste Überprüfung am 01.04.2026.</pre></div></details></div></div></div></div></section><section class='card'><div class='card-header'><div><div class='eyebrow'>Anforderung 3</div><h2>Die Überprüfung sowie die sich daraus ergebenden Berechtigungsanpassungen werden nachvollziehbar dokumentiert.</h2></div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='overall-statement'>Sowohl die Überprüfung der Berechtigungen als auch die daraus resultierenden Anpassungen werden nachvollziehbar und revisionssicher dokumentiert. Die Evidenz ist durch Prozessbeschreibungen, Protokollierungsregeln und konkrete Nachweisbeispiele klar belegt.</p><div class='sub-grid'><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die Überprüfung der Berechtigungen wird nachvollziehbar dokumentiert.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Die Überprüfungen werden in der Identity-Governance-Plattform (IGP) mit Zeitstempel, Entscheider:in, Begründung und betroffenen Rollen protokolliert. Die IGP erstellt eine unveränderbare Kampagnen-Zusammenfassung, die ins DMS exportiert wird. Tabellenbeispiele und Prozessbeschreibungen belegen die Nachvollziehbarkeit.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen'>Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt die Protokollierung und Nachweisführung von Review-Entscheidungen im IGP-System, inklusive Zeitstempel, Entscheider:in, Begründung und betroffenen Rollen. Es wird erläutert, dass fachliche Rollen regelmäßig überprüft werden, während administrative Berechtigungen (z.B. CRM-SP-ADMIN, DLX-ADMIN, SAP_BASIS_ADMIN) von der zentralen IT verantwortet werden. Ein jährliches Review für Admin-Gruppen ist im CIO-Projekt &#x27;ADMIN-GOV-2025&#x27; für Q4/2025 geplant. Eine bekannte Lücke ist, dass FDS keine Bestätigung über Admin-Reviews erhält und kein Abgleich mit der FDS-Personalliste erfolgt.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweisarten, Systeme und Aufbewahrungsfristen für IGP-Kampagnen'>Nachweisarten, Systeme und Aufbewahrungsfristen für IGP-Kampagnen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Nachweis</td><td>System</td><td>Inhalt</td><td>Aufbewahrung</td></tr><tr><td>IGP Kampagnen- Log</td><td>IGP , Keystone”</td><td>Reviewer, Entscheidungen, Zeitstempel, Anderungsbegruindungen</td><td>3 Jahre (unveranderbar, revisionssicher exportiert ins DMS)</td></tr><tr><td>Anderungstickets</td><td>ServiceDeskOne</td><td>Request, Genehmigungen, Umsetzung, Vier- Augen-Freigabe, Abschluss</td><td>3 Jahre (Verknupfung zur Kampagne)</td></tr><tr><td>Stichprobenberichte</td><td>Confluence</td><td>5 %-Sample, Priifnotizen, Abweichungen &amp; KorrekturmaBnahmen</td><td>3 Jahre</td></tr></table></div></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer'>Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Benutzer</td><td>Typ</td><td>Team</td><td>System/Rolle</td><td>Entscheidung</td><td>Begriindung (Kurz)</td><td>IGP- Zeitstempel</td><td>Ticket- ID</td></tr><tr><td>Anna Schmidt</td><td>Intern</td><td>Performance Marketing</td><td>DataLake-X / DLX_MARKETING_ANALYST</td><td>Bestatigt</td><td>Aktives Projekt ,Attribution 2.0"</td><td>2024-10-07 10:14</td><td>SDO- 124558</td></tr><tr><td>Ben Miller</td><td>Extern (Lieferant)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_EDIT</td><td>Entzogen</td><td>sow abgelaufen 2024-09-15</td><td>2024-10-08 15:22</td><td>SDO- 124733</td></tr><tr><td>Ch. Nguyen</td><td>Intern</td><td>Data Science</td><td>SFTP-Marketing / SFTP_WRITE</td><td>Andern</td><td>Reduzierung auf READ (Rollentausch)</td><td>2024-10-09 09:03</td><td>SDO- 124840</td></tr><tr><td>D. Keller</td><td>Intern (Elternzeit)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_READ</td><td>Bestatigt</td><td>Ersatz Ubernimmt keine Rolle</td><td>2024-10-10 13:47</td><td/></tr><tr><td>E. Rossi</td><td>Extern (Lieferant)</td><td>Data Science</td><td>DataLake-X / DLX_CONTRACTOR</td><td>Bestatigt</td><td>sow Verlangerung in Prifung</td><td>2024-10-11 08:26</td><td/></tr></table></div></div></details></div></div></div><div class='sub-card'><div class='sub-header'><div class='sub-title'>Die sich aus der Überprüfung ergebenden Berechtigungsanpassungen werden nachvollziehbar dokumentiert.</div><span class='badge' style='color:#0E9F6E; background:#ECFDF3; border-color:#0E9F6E;'>vollstaendig erfuellt</span></div><p class='sub-statement'>Jede Änderung (Entzug/Änderung) erzeugt ein verknüpftes Ticket im Service-Management-System (SMS), das die Umsetzung, Vier-Augen-Freigabe und ein Abschlussprotokoll enthält. Die Verknüpfung zur Kampagne und die Aufbewahrung sind geregelt. Tabellen und Prozessdarstellungen belegen dies.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen'>Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt die Protokollierung und Nachweisführung von Review-Entscheidungen im IGP-System, inklusive Zeitstempel, Entscheider:in, Begründung und betroffenen Rollen. Es wird erläutert, dass fachliche Rollen regelmäßig überprüft werden, während administrative Berechtigungen (z.B. CRM-SP-ADMIN, DLX-ADMIN, SAP_BASIS_ADMIN) von der zentralen IT verantwortet werden. Ein jährliches Review für Admin-Gruppen ist im CIO-Projekt &#x27;ADMIN-GOV-2025&#x27; für Q4/2025 geplant. Eine bekannte Lücke ist, dass FDS keine Bestätigung über Admin-Reviews erhält und kein Abgleich mit der FDS-Personalliste erfolgt.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweisarten, Systeme und Aufbewahrungsfristen für IGP-Kampagnen'>Nachweisarten, Systeme und Aufbewahrungsfristen für IGP-Kampagnen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Nachweis</td><td>System</td><td>Inhalt</td><td>Aufbewahrung</td></tr><tr><td>IGP Kampagnen- Log</td><td>IGP , Keystone”</td><td>Reviewer, Entscheidungen, Zeitstempel, Anderungsbegruindungen</td><td>3 Jahre (unveranderbar, revisionssicher exportiert ins DMS)</td></tr><tr><td>Anderungstickets</td><td>ServiceDeskOne</td><td>Request, Genehmigungen, Umsetzung, Vier- Augen-Freigabe, Abschluss</td><td>3 Jahre (Verknupfung zur Kampagne)</td></tr><tr><td>Stichprobenberichte</td><td>Confluence</td><td>5 %-Sample, Priifnotizen, Abweichungen &amp; KorrekturmaBnahmen</td><td>3 Jahre</td></tr></table></div></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer'>Zugriffsentscheidungen und Rollenänderungen für verschiedene Benutzer</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Table)</summary><div class='evidence-expanded'><div class='table-wrap'><table><tr><td>Benutzer</td><td>Typ</td><td>Team</td><td>System/Rolle</td><td>Entscheidung</td><td>Begriindung (Kurz)</td><td>IGP- Zeitstempel</td><td>Ticket- ID</td></tr><tr><td>Anna Schmidt</td><td>Intern</td><td>Performance Marketing</td><td>DataLake-X / DLX_MARKETING_ANALYST</td><td>Bestatigt</td><td>Aktives Projekt ,Attribution 2.0"</td><td>2024-10-07 10:14</td><td>SDO- 124558</td></tr><tr><td>Ben Miller</td><td>Extern (Lieferant)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_EDIT</td><td>Entzogen</td><td>sow abgelaufen 2024-09-15</td><td>2024-10-08 15:22</td><td>SDO- 124733</td></tr><tr><td>Ch. Nguyen</td><td>Intern</td><td>Data Science</td><td>SFTP-Marketing / SFTP_WRITE</td><td>Andern</td><td>Reduzierung auf READ (Rollentausch)</td><td>2024-10-09 09:03</td><td>SDO- 124840</td></tr><tr><td>D. Keller</td><td>Intern (Elternzeit)</td><td>CRM Ops</td><td>CRM-SalesPro / CRM_READ</td><td>Bestatigt</td><td>Ersatz Ubernimmt keine Rolle</td><td>2024-10-10 13:47</td><td/></tr><tr><td>E. Rossi</td><td>Extern (Lieferant)</td><td>Data Science</td><td>DataLake-X / DLX_CONTRACTOR</td><td>Bestatigt</td><td>sow Verlangerung in Prifung</td><td>2024-10-11 08:26</td><td/></tr></table></div></div></details></div></div></div></div></section><section class='card'><div class='card-header'><div><div class='eyebrow'>Anforderung 4</div><h2>Administrative Berechtigungen werden regelmäßig (mind. jährlich) überprüft.</h2></div><span class='badge' style='color:#DC2626; background:#FEF2F2; border-color:#DC2626;'>nicht erfuellt</span></div><p class='overall-statement'>Die Anforderung ist nicht erfüllt: Administrative Berechtigungen werden aktuell weder regelmäßig noch mindestens jährlich überprüft. Ein entsprechender Prozess ist erst in Planung und noch nicht umgesetzt. Es besteht eine bekannte Lücke, da keine Bestätigung über erfolgte Admin-Reviews vorliegt und kein Abgleich mit der FDS-Personalliste erfolgt.</p><div class='sub-grid'><div class='sub-card'><div class='sub-header'><div class='sub-title'>Administrative Berechtigungen werden regelmäßig überprüft.</div><span class='badge' style='color:#F59E0B; background:#FFFBEB; border-color:#F59E0B;'>teilweise erfuellt</span></div><p class='sub-statement'>Administrative Berechtigungen werden derzeit nicht im Rahmen der FDS-Kampagnen geprüft. Die Verantwortung liegt bei der zentralen IT (CIO-Bereich). Ein abgestimmtes, mindestens jährliches Review ist in Arbeit (CIO-Projekt „ADMIN-GOV-2025“), aber noch nicht umgesetzt. Es gibt eine bekannte Lücke: FDS erhält bisher keine Bestätigung über erfolgte Admin-Reviews und es existiert kein Abgleich zwischen FDS-Personalliste und Admin-Gruppen.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen'>Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt die Protokollierung und Nachweisführung von Review-Entscheidungen im IGP-System, inklusive Zeitstempel, Entscheider:in, Begründung und betroffenen Rollen. Es wird erläutert, dass fachliche Rollen regelmäßig überprüft werden, während administrative Berechtigungen (z.B. CRM-SP-ADMIN, DLX-ADMIN, SAP_BASIS_ADMIN) von der zentralen IT verantwortet werden. Ein jährliches Review für Admin-Gruppen ist im CIO-Projekt &#x27;ADMIN-GOV-2025&#x27; für Q4/2025 geplant. Eine bekannte Lücke ist, dass FDS keine Bestätigung über Admin-Reviews erhält und kein Abgleich mit der FDS-Personalliste erfolgt.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)'>Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt enthält KPIs der letzten Kampagne (Oktober 2024) zur regelmäßigen Berechtigungsüberprüfung im Fachbereich Digital Sales, einen Review-Auszug der Kampagne „FDS-Q4-2024“ mit Hinweisen auf Prozesslücken (z.B. Langzeitabwesenheit, ThirdPartyHub-Rhythmus), Visualisierungen und Ticketnummern sowie einen Maßnahmenplan zur Verbesserung, darunter die Erhöhung der TPH-Frequenz, Integration des Attributs „Langzeitabwesenheit“ in PeopleCore, verbindliche Admin-Reviews und Policy-Updates.</pre></div></details></div></div></div><div class='sub-card'><div class='sub-header'><div class='sub-title'>Administrative Berechtigungen werden mindestens jährlich überprüft.</div><span class='badge' style='color:#DC2626; background:#FEF2F2; border-color:#DC2626;'>nicht erfuellt</span></div><p class='sub-statement'>Ein mindestens jährliches Review für administrative Berechtigungen ist noch nicht umgesetzt, sondern lediglich in Planung (CIO-Projekt „ADMIN-GOV-2025“, geplante Inbetriebnahme Q4/2025). Aktuell gibt es keine Evidenz für eine tatsächlich durchgeführte jährliche Überprüfung.</p><div class='evidence-grid'><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen'>Nachweise, Protokollierung &amp; Abgrenzung administrativer Berechtigungen</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 2, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt beschreibt die Protokollierung und Nachweisführung von Review-Entscheidungen im IGP-System, inklusive Zeitstempel, Entscheider:in, Begründung und betroffenen Rollen. Es wird erläutert, dass fachliche Rollen regelmäßig überprüft werden, während administrative Berechtigungen (z.B. CRM-SP-ADMIN, DLX-ADMIN, SAP_BASIS_ADMIN) von der zentralen IT verantwortet werden. Ein jährliches Review für Admin-Gruppen ist im CIO-Projekt &#x27;ADMIN-GOV-2025&#x27; für Q4/2025 geplant. Eine bekannte Lücke ist, dass FDS keine Bestätigung über Admin-Reviews erhält und kein Abgleich mit der FDS-Personalliste erfolgt.</pre></div></details></div><div class='evidence-card'><div class='evidence-top'><div class='evidence-title'>Evidenz</div><div class='evidence-doc-title' title='Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)'>Metriken, Review und Maßnahmenplan zur Berechtigungsüberprüfung (Digital Sales, Q4 2024)</div></div><details class='evidence-details'><summary class='evidence-summary evidence-summary-meta'>(Test.pdf, S. 3, Text)</summary><div class='evidence-expanded'><pre class='text-block'>Dieser Abschnitt enthält KPIs der letzten Kampagne (Oktober 2024) zur regelmäßigen Berechtigungsüberprüfung im Fachbereich Digital Sales, einen Review-Auszug der Kampagne „FDS-Q4-2024“ mit Hinweisen auf Prozesslücken (z.B. Langzeitabwesenheit, ThirdPartyHub-Rhythmus), Visualisierungen und Ticketnummern sowie einen Maßnahmenplan zur Verbesserung, darunter die Erhöhung der TPH-Frequenz, Integration des Attributs „Langzeitabwesenheit“ in PeopleCore, verbindliche Admin-Reviews und Policy-Updates.</pre></div></details></div></div></div></div></section>
+  </div>
+</body>
+</html>
+    
