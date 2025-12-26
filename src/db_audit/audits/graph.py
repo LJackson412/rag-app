@@ -59,8 +59,15 @@ async def audit(
 
         rs.llm_answer = audit_res
 
-    state_for_report = state.model_copy(update={"retrieval_states": retrieval_states})
-    report_html = asyncio.to_thread(generate_audit_report, state_for_report)
+    requirement_audits: list[tuple[str, AuditResult]] = []
+    for requirement, retrieval_state in zip(state.requirements, retrieval_states):
+        audit_result = retrieval_state.llm_answer
+        if isinstance(audit_result, AuditResult):
+            requirement_audits.append((requirement, audit_result))
+
+    report_html = await asyncio.to_thread(
+        generate_audit_report, state.workitem_element_id, requirement_audits
+    )
 
     return {"retrieval_states": retrieval_states, "audit_report_html": report_html}
 

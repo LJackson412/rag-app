@@ -4,12 +4,11 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
+from typing import Iterable
+
 from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage
 
 from db_audit.audits.schema import AuditResult, SubRequirementAudit
-from db_audit.audits.state import OverallAuditState
-from rag_core.retrieval.state import OutputRetrievalState
 
 BADGE_COLORS = {
     "vollstaendig_erfuellt": ("#0E9F6E", "#ECFDF3"),
@@ -75,30 +74,35 @@ def _render_requirement_card(requirement: str, audit_result: AuditResult, index:
     )
 
 
-def _extract_requirement(rs: OutputRetrievalState) -> str:
-    for message in rs.messages:
-        if isinstance(message, HumanMessage):
-            return str(message.content)
-    return "Unbekannte Anforderung"
+def generate_audit_report(
+    workitem_id: str,
+    requirements_with_results: Iterable[tuple[str, AuditResult]],
+    base_dir: str | Path = "Audits",
+) -> str:
+    """Render audit results into a reusable HTML string.
 
-
-def generate_audit_report(state: OverallAuditState, base_dir: str | Path = "Audits") -> str:
-    """Render the audit results of a graph run into a reusable HTML string.
+    Args:
+        workitem_id: Identifier of the audited work item used for folder and file names.
+        requirements_with_results: Iterable of ``(requirement, AuditResult)`` tuples.
+            The iterable should already be filtered to contain only successfully
+            generated audit results and must be ordered as they should appear in
+            the report (typically matching the original requirements input).
+        base_dir: Root folder in which the report directory will be created.
 
     The report is stored under ``Audits/<workitem_element_id>/<workitem_element_id>.html``
     and the rendered HTML string is returned for downstream use.
     """
 
     requirement_cards: list[str] = []
-    for idx, retrieval_state in enumerate(state.retrieval_states, start=1):
-        audit_result = retrieval_state.llm_answer
-        if not isinstance(audit_result, AuditResult):
-            continue
-        requirement_text = _extract_requirement(retrieval_state)
-        requirement_cards.append(_render_requirement_card(requirement_text, audit_result, idx))
+    for idx, (requirement_text, audit_result) in enumerate(
+        requirements_with_results, start=1
+    ):
+        requirement_cards.append(
+            _render_requirement_card(requirement_text, audit_result, idx)
+        )
 
     generated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-    workitem_id = state.workitem_element_id or "unbekannt"
+    workitem_id = workitem_id or "unbekannt"
 
     html = f"""
 <!doctype html>
