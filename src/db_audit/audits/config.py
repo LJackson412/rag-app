@@ -8,7 +8,6 @@ from pydantic.json_schema import SkipJsonSchema
 
 from db_audit.audits.prompts import AUDIT_PROMPT
 from db_audit.audits.schema import LLMAuditResult
-from rag_core.retrieval.schema import LLMAnswer
 
 T = TypeVar("T", bound="AuditConfig")
 
@@ -16,6 +15,12 @@ T = TypeVar("T", bound="AuditConfig")
 class AuditConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
     # Index:
+    skip_index: bool = Field(
+        default=True,
+        description="",
+        json_schema_extra={"langgraph_nodes": ["generate_answer"]},
+    )
+    
     # Audit:
     number_of_docs_to_retrieve: Annotated[
         int,
@@ -42,11 +47,7 @@ class AuditConfig(BaseModel):
         description="",
         json_schema_extra={"langgraph_nodes": ["generate_answer"]},
     )
-    skip_index: bool = Field(
-        default=True,
-        description="",
-        json_schema_extra={"langgraph_nodes": ["generate_answer"]},
-    )
+
 
     @classmethod
     def from_runnable_config(cls: type[T], config: RunnableConfig | None = None) -> T:

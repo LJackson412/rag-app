@@ -1,5 +1,3 @@
-import asyncio
-
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
@@ -30,6 +28,8 @@ async def retrieve_docs(
 ) -> list[OutputRetrievalState]:
     """
     - Dursuchen einer Collection nach relevanten Dokumenten basierend auf mehreren Abfragen
+    - Normalisiert rohe Graph-Ergebnisse zu einer Instanz des erwarteten Antwortschemas,
+      damit nachgelagerte Auditschritte einheitliche Typen erhalten
     """
     
     retrieval_config = RunnableConfig(
@@ -59,5 +59,5 @@ async def retrieve_docs(
         inputs=retrieval_states,
         config=retrieval_configs
     )
-    
+
     return [OutputRetrievalState.model_validate(r) for r in results]

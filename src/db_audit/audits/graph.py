@@ -48,11 +48,11 @@ async def audit(
     )
   
     for rs in retrieval_states:
-        audit_res = cast(LLMAuditResult, rs.llm_answer)
+        llm_audit_res = cast(LLMAuditResult, rs.llm_answer)
         if rs.llm_answer is None:
             continue
 
-        audit_res = AuditResult.model_validate(rs.llm_answer.model_dump())
+        audit_res = AuditResult.from_llm(llm_audit_res)
         audit_res.attach_documents(rs.filtered_docs)
         
         rs.llm_answer = audit_res
