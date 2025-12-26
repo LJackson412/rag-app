@@ -63,6 +63,13 @@ class OutputAuditState(BaseModel):
             description=("requirements for audits"),
         ),
     ]
+    audit_report_html: Annotated[
+        str,
+        Field(
+            default="",
+            description=("Rendered HTML report for the audit run"),
+        ),
+    ]
 
 
 class OverallAuditState(InputAuditState, OutputAuditState):

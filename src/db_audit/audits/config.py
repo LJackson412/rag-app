@@ -16,7 +16,7 @@ class AuditConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
     # Index:
     skip_index: bool = Field(
-        default=True,
+        default=False,
         description="",
         json_schema_extra={"langgraph_nodes": ["generate_answer"]},
     )

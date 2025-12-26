@@ -20,3 +20,20 @@ REQUIREMENTS = [
     "Administrative Berechtigungen werden regelmäßig (mind. jährlich) überprüft.",
 ]
 
+
+
+CASES = [
+    {
+        "workitem_element_id": "Test_M_1",
+        "paths": [
+            "./data/Test/Test.pdf"
+        ],
+        "requirements": [
+            "Zugriffsberechtigungen von Benutzern unter Verantwortung des Unternehmens (interne und externe Mitarbeiter) werden mindestens jährlich überprüft, um diese zeitnah auf Änderungen im Beschäftigungsverhältnis (Kündigung, Versetzung, längerer Abwesenheit/Sabbatical/Elternzeit) anzupassen.",
+            "Die Überprüfung erfolgt durch hierzu autorisierte Personen aus den Unternehmensbereichen des Unternehmens, die aufgrund ihres Wissens über die Zuständigkeiten die Angemessenheit der vergebenen Berechtigungen überprüfen können."
+        ],
+        "doc_ids": [
+            "Test_pdf"
+        ]
+    }
+]
