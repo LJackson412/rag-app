@@ -189,4 +189,12 @@ class RetrievalConfig(BaseModel):
         configurable = config.get("configurable", {}) or {}
         valid_fields = set(cls.model_fields.keys())
         filtered = {k: v for k, v in configurable.items() if k in valid_fields}
-        return cls(**filtered)
+        instance = cls(**filtered)
+        
+        # allow overriding the structured output schema via configurable even though
+        # it is stored as a private attribute
+        schema_override = configurable.get("generate_answer_schema")
+        if isinstance(schema_override, type) and issubclass(schema_override, BaseModel):
+            instance._generate_answer_schema = schema_override
+
+        return instance
