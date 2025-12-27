@@ -2,9 +2,6 @@ import json
 from collections.abc import Iterable, Sequence
 
 from langchain_core.documents import Document
-from langchain_core.runnables import RunnableConfig, ensure_config
-
-from rag_core.providers.composition import ProviderFactory, get_provider_factory
 
 DocOrScoredDoc = Document | tuple[Document, float]
 
@@ -89,8 +86,3 @@ def extract_provider_and_model(name: str) -> tuple[str, str]:
         return provider, model
     else:
         raise ValueError("No provider prefix found")
-
-def get_provider_factory_from_config(config: RunnableConfig) -> ProviderFactory:
-    ensured = ensure_config(config)
-    configurable = ensured.get("configurable", {}) or {}
-    return get_provider_factory(configurable.get("provider_factory"))

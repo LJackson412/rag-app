@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 
 from langchain_core.runnables import RunnableConfig, ensure_config
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from rag_core.index.prompts import GEN_METADATA_PROMPT
+from rag_core.providers.factory import DefaultProviderFactory, ProviderFactory
 
 T = TypeVar("T", bound="IndexConfig")
 
@@ -106,6 +107,11 @@ class IndexConfig(BaseModel):
         json_schema_extra={"langgraph_nodes": ["extract_text"]},
     )
     # ------------------------------------------------------------------------
+    _provider_factory: ProviderFactory = PrivateAttr(default_factory=DefaultProviderFactory)
+    
+    @property
+    def provider_factory(self) -> ProviderFactory:
+        return self._provider_factory
 
     @classmethod
     def from_runnable_config(cls: type[T], config: RunnableConfig | None = None) -> T:

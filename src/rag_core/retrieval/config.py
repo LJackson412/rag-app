@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Annotated, Literal, Type, TypeVar
 
 from langchain_core.runnables import RunnableConfig, ensure_config
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 from pydantic.json_schema import SkipJsonSchema
 
+from rag_core.providers.factory import DefaultProviderFactory, ProviderFactory
 from rag_core.retrieval.prompts import (
     COMPRESS_DOCS_PROMPT,
     GENERATE_ANSWER_PROMPT,
@@ -174,6 +175,10 @@ class RetrievalConfig(BaseModel):
         description="Runtime-only (not part of JSON schema/config UI).",
         json_schema_extra={"langgraph_nodes": ["generate_answer"]},
     )
+    _provider_factory: ProviderFactory = PrivateAttr(default_factory=DefaultProviderFactory)
+    @property
+    def provider_factory(self) -> ProviderFactory:
+        return self._provider_factory
 
     @classmethod
     def from_runnable_config(cls: type[T], config: RunnableConfig | None = None) -> T:

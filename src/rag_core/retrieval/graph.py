@@ -17,10 +17,7 @@ from rag_core.retrieval.state import (
     OutputRetrievalState,
     OverallRetrievalState,
 )
-from rag_core.utils.utils import (
-    extract_provider_and_model,
-    get_provider_factory_from_config,
-)
+from rag_core.utils.utils import extract_provider_and_model
 
 
 async def generate_questions(
@@ -28,8 +25,8 @@ async def generate_questions(
 ) -> dict[str, list[str]]:
     
     retrieval_config = RetrievalConfig.from_runnable_config(config)
+    provider_factory = retrieval_config.provider_factory
     
-    provider_factory = get_provider_factory_from_config(config)
     generate_questions_provider, model_name = extract_provider_and_model(
         retrieval_config.generate_questions_model
     )
@@ -65,7 +62,7 @@ async def retrieve_docs(
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
     
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = retrieval_config.provider_factory
     
     embedding_provider, model_name = extract_provider_and_model(
         retrieval_config.embedding_model
@@ -87,6 +84,7 @@ async def retrieve_docs(
         embedding_model,
         provider=vstore_provider,
         collection_name=collection_name,
+        persist_directory=".chroma"
     )
 
     search_kwargs: Dict[str, Any] = {"k": k}
@@ -129,7 +127,7 @@ async def compress_docs(
 ) -> dict[str, list[Document]]:
     retrieval_config = RetrievalConfig.from_runnable_config(config)
 
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = retrieval_config.provider_factory
 
     compress_docs_provider, model_name = extract_provider_and_model(
         retrieval_config.compress_docs_model
@@ -198,7 +196,7 @@ async def generate_answer(
 
     retrieval_config = RetrievalConfig.from_runnable_config(config)
 
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = retrieval_config.provider_factory
 
     generate_answer_provider, model_name = extract_provider_and_model(
         retrieval_config.generate_answer_model

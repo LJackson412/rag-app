@@ -11,14 +11,12 @@ from rag_core.providers.chat_model import get_chat_model
 from rag_core.providers.embedding import get_embedding
 from rag_core.providers.vstore import get_vstore
 
-_DEFAULT_RATE_LIMITER = InMemoryRateLimiter()
-
 
 class ProviderFactory(Protocol):
     def build_chat_model(
         self,
-        provider: str = "openai",
-        model_name: str = "gpt-4.1",
+        provider: str,
+        model_name: str,
         temp: float = 0.0,
         max_retries: int = 5,
         rate_limiter: InMemoryRateLimiter | None = None,
@@ -26,25 +24,26 @@ class ProviderFactory(Protocol):
     
     def build_embeddings(
         self,
-        provider: str = "openai",
-        model_name: str = "text-embedding-3-large"
+        provider: str,
+        model_name: str 
     ) -> Embeddings: ...
     
     def build_vstore(
         self,
         embedding_model: Embeddings,
-        provider: str= "chroma",
-        collection_name: str = "chroma_collection",
-        persist_directory: str = ".chroma_directory"
+        provider: str,
+        collection_name: str,
+        persist_directory: str 
     ) -> VectorStore: ...
 
 
+_DEFAULT_RATE_LIMITER = InMemoryRateLimiter()
 
 class DefaultProviderFactory:
     def build_chat_model(
         self,
-        provider: str = "openai",
-        model_name: str = "gpt-4.1",
+        provider: str,
+        model_name: str,
         temp: float = 0.0,
         max_retries: int = 5,
         rate_limiter: InMemoryRateLimiter | None = None,
@@ -59,8 +58,8 @@ class DefaultProviderFactory:
 
     def build_embeddings(
         self,
-        provider: str = "openai",
-        model_name: str = "text-embedding-3-large"
+        provider: str,
+        model_name: str
     ) -> Embeddings:
         return get_embedding(
             provider=provider,
@@ -70,9 +69,9 @@ class DefaultProviderFactory:
     def build_vstore(
         self,
         embedding_model: Embeddings,
-        provider: str = "chroma",
-        collection_name: str = "chroma_collection",
-        persist_directory: str = ".chroma_directory"
+        provider: str,
+        collection_name: str,
+        persist_directory: str
     ) -> VectorStore:
 
         return get_vstore(
@@ -81,10 +80,3 @@ class DefaultProviderFactory:
             collection_name=collection_name,
             persist_directory=persist_directory,
         )
-
-
-_DEFAULT_PROVIDER_FACTORY = DefaultProviderFactory()
-
-
-def get_provider_factory(factory: ProviderFactory | None = None) -> ProviderFactory:
-    return factory or _DEFAULT_PROVIDER_FACTORY
