@@ -21,11 +21,7 @@ from rag_core.llm_enrichment.llm_enrichment import (
 )
 from rag_core.loader.loader import load
 from rag_core.loader.schema import Segment
-from rag_core.utils.utils import (
-    extract_provider_and_model,
-    get_provider_factory_from_config,
-    make_chunk_id,
-)
+from rag_core.utils.utils import extract_provider_and_model, make_chunk_id
 
 
 async def load_file(
@@ -85,7 +81,7 @@ async def enrich_texts_with_llm(
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
     
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = index_config.provider_factory
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
     gen_metadata_provider, model_name = extract_provider_and_model(
@@ -138,7 +134,7 @@ async def enrich_imgs_with_llm(
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
     
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = index_config.provider_factory
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
     gen_metadata_provider, model_name = extract_provider_and_model(
@@ -188,7 +184,7 @@ async def enrich_tables_with_llm(
 ) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
     
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = index_config.provider_factory
 
     gen_metadata_prompt = index_config.gen_metadata_prompt
     gen_metadata_provider, model_name = extract_provider_and_model(
@@ -235,7 +231,7 @@ async def enrich_tables_with_llm(
 async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, Any]:
     index_config = IndexConfig.from_runnable_config(config)
     
-    provider_factory = get_provider_factory_from_config(config)
+    provider_factory = index_config.provider_factory
 
     collection_name = index_config.collection_id
     embedding_provider, model_name = extract_provider_and_model(
@@ -251,6 +247,7 @@ async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, An
         embedding_model,
         provider=vstore_provider,
         collection_name=collection_name,
+        persist_directory=".chroma"
     )
 
     segments = state.texts + state.imgs + state.tables
