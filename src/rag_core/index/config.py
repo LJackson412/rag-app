@@ -14,10 +14,7 @@ T = TypeVar("T", bound="IndexConfig")
 class IndexConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
     embedding_model: Annotated[
-        Literal[
-            "openai/text-embedding-3-small",
-            "openai/text-embedding-3-large",
-        ],
+        str,
         Field(
             default="openai/text-embedding-3-large",
             description=(
@@ -42,7 +39,7 @@ class IndexConfig(BaseModel):
     # ------------------------------------------------------------------------
 
     gen_metadata_model: Annotated[
-        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
+        str,
         Field(
             default="openai/gpt-4.1",
             description=(
@@ -68,7 +65,7 @@ class IndexConfig(BaseModel):
         },
     )
     vstore: Annotated[
-        Literal["chroma"],
+        str,
         Field(
             default="chroma",
             description="Vector store provider",

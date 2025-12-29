@@ -19,7 +19,7 @@ T = TypeVar("T", bound="RetrievalConfig")
 class RetrievalConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
     generate_questions_model: Annotated[
-        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
+        str,
         Field(
             default="openai/gpt-4.1",
             description=(
@@ -59,10 +59,7 @@ class RetrievalConfig(BaseModel):
     ]
 
     embedding_model: Annotated[
-        Literal[
-            "openai/text-embedding-3-small",
-            "openai/text-embedding-3-large",
-        ],
+        str,
         Field(
             default="openai/text-embedding-3-large",
             description=(
@@ -94,7 +91,7 @@ class RetrievalConfig(BaseModel):
         json_schema_extra={"langgraph_nodes": ["retrieve"]},
     )
     compress_docs_model: Annotated[
-        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
+        str,
         Field(
             default="openai/gpt-4.1",
             description=(
@@ -116,7 +113,7 @@ class RetrievalConfig(BaseModel):
     )
 
     generate_answer_model: Annotated[
-        Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
+        str,
         Field(
             default="openai/gpt-4.1",
             description=(
