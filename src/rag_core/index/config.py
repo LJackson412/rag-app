@@ -13,25 +13,6 @@ T = TypeVar("T", bound="IndexConfig")
 
 class IndexConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
-
-    collection_id: Annotated[
-        str,
-        Field(
-            description=("A collection is a container of documents in the VStore"),
-            json_schema_extra={
-                "langgraph_nodes": ["save"],
-            },
-        ),
-    ]
-    doc_id: Annotated[
-        str,
-        Field(
-            description="The document ID is used to identify a document when it is retrieved",
-            json_schema_extra={
-                "langgraph_nodes": ["save"],
-            },
-        ),
-    ]
     embedding_model: Annotated[
         Literal[
             "openai/text-embedding-3-small",
@@ -86,11 +67,6 @@ class IndexConfig(BaseModel):
             "langgraph_type": "prompt",
         },
     )
-    splitter_seperators: list[str] = Field(
-        default=["\n\n", "\n", " ", ""],
-        description="Sepearatos for recursive text splitting",
-        json_schema_extra={"langgraph_nodes": ["extract_text"]},
-    )
     vstore: Annotated[
         Literal["chroma"],
         Field(
@@ -101,11 +77,6 @@ class IndexConfig(BaseModel):
             },
         ),
     ]
-    splitter_chunk_size: int = Field(
-        default=900,
-        description="Chunk Size for recursive text splitting",
-        json_schema_extra={"langgraph_nodes": ["extract_text"]},
-    )
     # ------------------------------------------------------------------------
     _provider_factory: ProviderFactory = PrivateAttr(default_factory=DefaultProviderFactory)
     

@@ -31,8 +31,6 @@ async def load_file(
 
     index_config = IndexConfig.from_runnable_config(config)
 
-    collection_id = index_config.collection_id
-    doc_id = index_config.doc_id
     gen_metadata_model = index_config.gen_metadata_model
     embedding_model = index_config.embedding_model
     
@@ -44,15 +42,15 @@ async def load_file(
         for i, s in enumerate(segs):
             chunk_id = make_chunk_id(
                 chunk_type=s.category,
-                collection_id=collection_id,
-                doc_id=doc_id,
+                collection_id=state.collection_id,
+                doc_id=state.doc_id,
                 chunk_index=i,
             )
 
             md = {
                 **s.metadata,
-                "doc_id": doc_id,
-                "collection_id": collection_id,
+                "doc_id": state.doc_id,
+                "collection_id": state.collection_id,
                 "embedding_model": embedding_model,
                 "gen_metadata_model": gen_metadata_model
             }
@@ -233,7 +231,6 @@ async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, An
     
     provider_factory = index_config.provider_factory
 
-    collection_name = index_config.collection_id
     embedding_provider, model_name = extract_provider_and_model(
         index_config.embedding_model
     )
@@ -246,7 +243,7 @@ async def save(state: OverallIndexState, config: RunnableConfig) -> dict[str, An
         provider_factory.build_vstore,
         embedding_model,
         provider=vstore_provider,
-        collection_name=collection_name,
+        collection_name=state.collection_id,
         persist_directory=".chroma"
     )
 

@@ -49,19 +49,17 @@ langgraph dev                 # starts the local LangGraph Dev/Studio interface
 2. **Set parameters:** Adjust `collection_id`, `doc_id`, and optionally `chunking_config` to your data.
 3. **Start run:** Execute the desired node in the Studio view or trigger the entire graph.
 
-### Example Calls
-./data/Test/Test.pdf
-./data/Test/Test.csv
-./data/Test/Test.docx
-./data/Test/Test.xlsx
-./data/Test/Test.png
+```python
+# Input 
+{
+  "collection_id": "Test",
+  "doc_id": "Test_XLSX",
+  "path": "./data/Test/Test.xlsx"
+}
+```
 
-**Indexers** – existing collections (already stored in `.chroma_directory`):
-- **OCR Indexer** `collection_id: Cancom_OCR`
-  - `doc_id: Cancom_240514`, `path: ./data/Cancom/240514_CANCOM_Zwischenmitteilung.pdf`
-  - `doc_id: Cancom_20241112`, `path: ./data/Cancom/20241112_CANCOM_Zwischenmitteilung.pdf`
 
-**Retrieval Queries**
+**Example Retrieval Queries**
 - Query entire collection: `collection_id = Cancom_OCR`, `doc_id = None`
   - Example question: "How does CANCOM describe the impact of acquiring the KBC / CANCOM Austria Group on revenue, gross profit, and EBITDA in the Q1 2024 and Q3 2024 interim reports?"
 - Query a single document: `collection_id = Cancom_OCR`, `doc_id = Cancom_240514`
