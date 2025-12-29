@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
@@ -12,6 +12,7 @@ from rag_core.providers.embedding import get_embedding
 from rag_core.providers.vstore import get_vstore
 
 
+@runtime_checkable
 class ProviderFactory(Protocol):
     def build_chat_model(
         self,

@@ -148,13 +148,13 @@ class RetrievalConfig(BaseModel):
     )
  
     _generate_answer_schema: Type[BaseModel] = PrivateAttr(default=LLMAnswer)
+
+    _provider_factory: ProviderFactory = PrivateAttr(default_factory=DefaultProviderFactory)
     
     @property
     def generate_answer_schema(self) -> Type[BaseModel]:
         return self._generate_answer_schema
-    
-    _provider_factory: ProviderFactory = PrivateAttr(default_factory=DefaultProviderFactory)
-    
+
     @property
     def provider_factory(self) -> ProviderFactory:
         return self._provider_factory
@@ -173,5 +173,9 @@ class RetrievalConfig(BaseModel):
         schema_override = configurable.get("generate_answer_schema")
         if isinstance(schema_override, type) and issubclass(schema_override, BaseModel):
             instance._generate_answer_schema = schema_override
+        
+        provider_factory = configurable.get("provider_factory")
+        if isinstance(provider_factory, ProviderFactory):
+            instance._provider_factory = provider_factory
 
         return instance
