@@ -18,29 +18,6 @@ T = TypeVar("T", bound="RetrievalConfig")
 
 class RetrievalConfig(BaseModel):
     """Configurable Indexing Mode for RAG Index Graph."""
-
-    collection_id: Annotated[
-        str,
-        Field(
-            default="",
-            description=(
-                "By specifying a collection, all documents in the container will be queried"
-            ),
-            json_schema_extra={
-                "langgraph_nodes": ["retrieve"],
-            },
-        ),
-    ]
-    doc_id: Annotated[
-        str | None,
-        Field(
-            default=None,
-            description="If no document ID is specified, the entire collection is queried.",
-            json_schema_extra={
-                "langgraph_nodes": ["retrieve"],
-            },
-        ),
-    ]
     generate_questions_model: Annotated[
         Literal["openai/gpt-4.1", "openai/gpt-4.1-mini"],
         Field(

@@ -68,9 +68,7 @@ async def retrieve_docs(
         retrieval_config.embedding_model
     )
     vstore_provider = retrieval_config.vstore
-    collection_name = retrieval_config.collection_id
-    
-    doc_id = retrieval_config.doc_id
+ 
     k = retrieval_config.number_of_docs_to_retrieve
     include_original_question = retrieval_config.include_original_question
     user_question = cast(str, state.messages[-1].content)
@@ -83,14 +81,14 @@ async def retrieve_docs(
         provider_factory.build_vstore,
         embedding_model,
         provider=vstore_provider,
-        collection_name=collection_name,
+        collection_name=state.collection_id,
         persist_directory=".chroma"
     )
 
     search_kwargs: Dict[str, Any] = {"k": k}
 
-    if doc_id is not None:
-        search_kwargs["filter"] = {"doc_id": doc_id}
+    if state.doc_id is not None:
+        search_kwargs["filter"] = {"doc_id": state.doc_id}
 
     retriever = vstore.as_retriever(
         search_type="similarity",
