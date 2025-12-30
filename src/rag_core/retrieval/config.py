@@ -165,8 +165,9 @@ class RetrievalConfig(BaseModel):
         filtered = {k: v for k, v in configurable.items() if k in valid_fields}
         instance = cls(**filtered)
         
-        # allow overriding the structured output schema via configurable even though
-        # it is stored as a private attribute
+        # Keep the provider factory and schmea by transforming RunnableConfig 
+        # into IndexConfig using “IndexConfig.from_runnable_config(config)”.
+        # This happens if you call the Graph from Outside without default config
         schema_override = configurable.get("generate_answer_schema")
         if isinstance(schema_override, type) and issubclass(schema_override, BaseModel):
             instance._generate_answer_schema = schema_override

@@ -88,4 +88,13 @@ class IndexConfig(BaseModel):
         configurable = config.get("configurable", {}) or {}
         valid_fields = set(cls.model_fields.keys())
         filtered = {k: v for k, v in configurable.items() if k in valid_fields}
-        return cls(**filtered)
+        instance = cls(**filtered)
+
+        # Keep the provider factory by transforming RunnableConfig 
+        # into IndexConfig using “IndexConfig.from_runnable_config(config)”.
+        # This happens if you call the Graph from Outside without default config
+        provider_factory = configurable.get("provider_factory")
+        if isinstance(provider_factory, ProviderFactory):
+            instance._provider_factory = provider_factory
+
+        return instance
